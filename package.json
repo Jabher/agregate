@@ -1,6 +1,6 @@
 {
   "name": "active-graph-record",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Schema-less ActiveRecord over neo4j",
   "main": "build/index.js",
   "scripts": {
@@ -9,7 +9,12 @@
     "preversion": "git add lib/* test/*; npm test; npm build",
     "postversion": "npm publish; git push -u origin master"
   },
-  "keywords": ["activeRecord", "db", "neo4j", "cypher"],
+  "keywords": [
+    "activeRecord",
+    "db",
+    "neo4j",
+    "cypher"
+  ],
   "author": "Vsevolod Rodionov <vsevolod.rodionov@gmail.com>",
   "license": "ISC",
   "devDependencies": {
