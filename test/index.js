@@ -1,14 +1,15 @@
 import 'babel-polyfill'
 import {expect} from 'chai'
+import {Record, query, connect} from '../lib/index'
+connect('http://neo4j:password@localhost:7474')
 
-import {Record, query} from '../build/index'
 class TestRecord extends Record {
     static namespace = 'test'
 }
 
 describe('ActiveRecord', () => {
     class Test extends TestRecord {}
-    Record.register(Test)
+    Test.register()
     beforeEach(async () =>
         await query(`MATCH (n) DETACH DELETE n`))
     after(async () =>
@@ -51,11 +52,13 @@ describe('ActiveRecord', () => {
 
     describe('relations', () => {
         class TestObject extends TestRecord {
-            get subjects() { return this.getRelation('subjects') }
+            get subjects() { return this.getRelation('relation') }
         }
-        Record.register(TestObject)
-        class TestSubject extends TestRecord {}
-        Record.register(TestSubject)
+        TestObject.register()
+        class TestSubject extends TestRecord {
+            get objects() { return this.getRelation('relation') }
+        }
+        TestSubject.register()
         let object, subject
         beforeEach(async () => {
             await (object = new TestObject()).save()
@@ -76,6 +79,8 @@ describe('ActiveRecord', () => {
                 expect(await object.subjects.size()).to.be.equal(1))
             it('should successfully resolve subjects', async () =>
                 expect(await object.subjects.entries()).to.has.length(1))
+            it('should resolve objects of subject', async () =>
+                expect(await subject.objects.entries()).to.has.length(1))
             it('should successfully delete subjects using Relation#delete', async () => {
                 const [entry] = await object.subjects.entries()
                 await object.subjects.delete(entry)
