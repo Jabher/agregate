@@ -1,0 +1,30 @@
+{
+  "name": "active-graph-record",
+  "version": "0.0.0",
+  "description": "",
+  "main": "build/index.js",
+  "scripts": {
+    "test": "./node_modules/.bin/mocha",
+    "build": "./node_modules/.bin/babel lib --out-dir build",
+    "preversion": "git add lib/* test/*; npm test; npm build",
+    "postversion": "npm publish"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-cli": "^6.3.17",
+    "babel-plugin-transform-decorators": "^6.3.13",
+    "babel-polyfill": "^6.3.14",
+    "babel-preset-es2015": "^6.3.13",
+    "babel-preset-stage-1": "^6.3.13",
+    "babel-register": "^6.3.13",
+    "chai": "^3.4.1",
+    "chai-as-promised": "^5.1.0",
+    "mocha": "^2.3.4"
+  },
+  "dependencies": {
+    "babel-plugin-syntax-decorators": "^6.3.13",
+    "neo4j": "^2.0.0-RC2",
+    "uuid": "^2.0.1"
+  }
+}
