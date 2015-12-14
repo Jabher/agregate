@@ -38,11 +38,12 @@ async function main () {
     const user = new User({first_name: 'John', last_name: 'Doe'})
     await user.save()
     const [resolvedUser] = await User.where({first_name: 'Jonh'})
-    resolvedUser.debug() // => {first_name: 'John', last_name: 'Doe', uuid: '###'}
+    resolvedUser.debug() // => {first_name: 'John', last_name: 'Doe', uuid: '###', created_at: ###, updated_at: ###}
 }
 ```
 
 Yes, UUIDv4 is used instead of primary key. But you can ignore it (unless you're trying to hack the lib)
+Created_at and updated_at can be used for sort.
  
 ## API
 
@@ -93,3 +94,22 @@ class ExampleSubject extends Record {
 }
 ExampleSubject.register()
 ```
+
+##FAQ
+#### How to extend something?
+create class methods
+
+#### How to save dates?
+
+
+#### How to validate?
+create getter and setter and validate there. Or create decorator (when @sebmck will bring their support back to babel).
+
+#### How to...
+Just use your imagination. It's just common ES6 class which is getting dumped to db from `{...this}` - taking only enumerable props.
+
+## Roadmap
+- [ ] sort
+- [ ] offset and limit
+- [ ] total test coverage
+- [ ] performance optimisations
