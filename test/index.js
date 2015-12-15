@@ -1,11 +1,13 @@
 import 'babel-polyfill'
 import {expect} from 'chai'
-import {Record, query, connect} from '../lib/index'
-connect('http://neo4j:password@localhost:7474')
+import {Record, GraphConnection} from '../lib/index'
 
+const connection = new GraphConnection('http://neo4j:password@localhost:7474')
 class TestRecord extends Record {
+    static connection = connection
     static namespace = 'test'
 }
+const query = connection.query.bind(connection)
 
 describe('ActiveRecord', () => {
     class Test extends TestRecord {}
@@ -77,7 +79,7 @@ describe('ActiveRecord', () => {
 
             it('should successfully resolve subjects', async () =>
                 expect(await object.subjects.size()).to.be.equal(1))
-            it('should successfully resolve subjects', async () =>
+            it('should successfully resolve subjects using Relation#entries', async () =>
                 expect(await object.subjects.entries()).to.has.length(1))
             it('should resolve objects of subject', async () =>
                 expect(await subject.objects.entries()).to.has.length(1))
