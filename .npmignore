@@ -3,5 +3,6 @@ lib
 test
 .gitignore
 .babelrc
+.istanbul.yml
 node_modules
 npm-debug.log

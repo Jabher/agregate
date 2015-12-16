@@ -1,0 +1,6 @@
+{
+  "preset": "idiomatic",
+  "validateQuoteMarks": "'",
+  "esnext": true,
+  "requireSemicolons": null
+}

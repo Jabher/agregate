@@ -7,7 +7,7 @@
     "test": "./node_modules/.bin/mocha",
     "build": "./node_modules/.bin/babel lib --out-dir build",
     "preversion": "git add lib/* test/*; npm test; npm build",
-    "postversion": "npm publish; git push -u origin master"
+    "postversion": "npm publish; ./node_modules/.bin/jscs --fix lib; git commit -a; git push -u origin master"
   },
   "keywords": [
     "activeRecord",
@@ -26,10 +26,12 @@
     "babel-register": "^6.3.13",
     "chai": "^3.4.1",
     "chai-as-promised": "^5.1.0",
+    "jscs": "^2.7.0",
     "mocha": "^2.3.4"
   },
   "dependencies": {
     "babel-plugin-syntax-decorators": "^6.3.13",
+    "debug": "^2.2.0",
     "neo4j": "^2.0.0-RC2",
     "uuid": "^2.0.1"
   }

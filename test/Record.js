@@ -5,7 +5,6 @@ import {Record, GraphConnection} from '../lib/index'
 const connection = new GraphConnection('http://neo4j:password@localhost:7474')
 class TestRecord extends Record {
     static connection = connection
-    static namespace = 'test'
 }
 const query = connection.query.bind(connection)
 
@@ -14,8 +13,8 @@ describe('ActiveRecord', () => {
     Test.register()
     beforeEach(async () =>
         await query(`MATCH (n) DETACH DELETE n`))
-    after(async () =>
-        await query(`MATCH (n) DETACH DELETE n`))
+    //after(async () =>
+    //    await query(`MATCH (n) DETACH DELETE n`))
 
     describe('classes', () => {
         let instance
@@ -92,6 +91,34 @@ describe('ActiveRecord', () => {
                 await object.subjects.clear()
                 expect(await object.subjects.size()).to.be.equal(0)
             })
+        })
+    })
+
+    describe('querying', () => {
+        const test = 'test'
+        let items
+        beforeEach(async () =>
+            items = await Promise.all(function* () {
+                let idx = 0
+                do yield new Test({idx, test}).save()
+                while (idx++ < 5)
+            }()))
+
+        it('should reveal item by prop', async () => {
+            expect(await Test.where({test})).to.have.length(items.length)
+            expect(await Test.where({idx: items[0].idx})).to.deep.include(items[0])
+        })
+        it('should support offset', async () => {
+            const limit = 2
+            const result = await Test.where({test}, {limit: 2, order: 'idx ASC'})
+            expect(result).to.have.length(limit)
+            expect(result.map(res => res.idx)).to.deep.equal([0,1])
+        })
+        it('should support limit', async () => {
+            const limit = 2
+            const result = await Test.where({test}, {limit: 2, offset: 1, order: 'idx ASC'})
+            expect(result).to.have.length(limit)
+            expect(result.map(res => res.idx)).to.deep.equal([1,2])
         })
     })
 })
