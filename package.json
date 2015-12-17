@@ -1,6 +1,6 @@
 {
   "name": "active-graph-record",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Schema-less ActiveRecord over neo4j",
   "main": "build/index.js",
   "scripts": {
