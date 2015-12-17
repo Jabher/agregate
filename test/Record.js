@@ -104,10 +104,10 @@ describe('ActiveRecord', () => {
                 while (idx++ < 5)
             }()))
 
-        it('should reveal item by prop', async () => {
-            expect(await Test.where({test})).to.have.length(items.length)
-            expect(await Test.where({idx: items[0].idx})).to.deep.include(items[0])
-        })
+        it('should reveal item by string prop', async () =>
+            expect(await Test.where({test})).to.have.length(items.length))
+        it('should reveal item by int prop', async () =>
+            expect(await Test.where({idx: items[0].idx})).to.deep.include(items[0]))
         it('should support offset', async () => {
             const limit = 2
             const result = await Test.where({test}, {limit: 2, order: 'idx ASC'})
