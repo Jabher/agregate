@@ -6,8 +6,8 @@
   "scripts": {
     "test": "./node_modules/.bin/mocha",
     "build": "./node_modules/.bin/babel lib --out-dir build",
-    "preversion": "git add lib/* test/*; npm test; npm build",
-    "postversion": "./node_modules/.bin/jscs --fix lib; git commit -a; git push -u origin master; npm publish"
+    "preversion": "git add lib/* test/*; npm test; npm run build",
+    "postversion": "./node_modules/.bin/jscs --fix lib; git commit -a; git push -u origin master"
   },
   "keywords": [
     "activeRecord",
@@ -19,7 +19,6 @@
   "license": "ISC",
   "devDependencies": {
     "babel-cli": "^6.3.17",
-    "babel-plugin-transform-decorators": "^6.3.13",
     "babel-polyfill": "^6.3.14",
     "babel-preset-es2015": "^6.3.13",
     "babel-preset-stage-1": "^6.3.13",
@@ -30,7 +29,7 @@
     "mocha": "^2.3.4"
   },
   "dependencies": {
-    "babel-plugin-syntax-decorators": "^6.3.13",
+    "cypher-talker": "^0.4.3",
     "debug": "^2.2.0",
     "neo4j": "^2.0.0-RC2",
     "uuid": "^2.0.1"

@@ -13,8 +13,6 @@ describe('ActiveRecord', () => {
     Test.register()
     beforeEach(async () =>
         await query(`MATCH (n) DETACH DELETE n`))
-    //after(async () =>
-    //    await query(`MATCH (n) DETACH DELETE n`))
 
     describe('classes', () => {
         let instance
