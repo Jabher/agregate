@@ -59,7 +59,7 @@ class Record {
     
     constructor (properties?: Object)
     
-    getRelation(relationLabel: string): Relation
+    getRelation(relationLabel: string, {targetLabel?: string, direction: [-1,0,1]}): Relation
     
     async save(properties?: Object): void 
     async delete(): void 
@@ -75,6 +75,8 @@ Just think about relation as about async Set as interface is nearly same (except
 ```typescript
 class Relation {
     async size(): number
+    async has(...records: Array<Record>): boolean
+    async hasDeep(...records: Array<Record>): boolean
     async add(record: Record): void
     async add(...records: Array<Record>): void
     async delete(record: Record): void
@@ -109,7 +111,10 @@ create getter and setter and validate there. Or create decorator (when @sebmck w
 Just use your imagination. It's just common ES6 class which is getting dumped to db from `{...this}` - taking only enumerable props.
 
 ## Roadmap
-- [ ] sort
-- [ ] offset and limit
+- [x] sort
+- [x] offset and limit
+- [x] has
+- [x] deep relations
+- [ ] indexes
 - [ ] total test coverage
 - [ ] performance optimisations

@@ -10,7 +10,9 @@ const query = connection.query.bind(connection)
 
 describe('ActiveRecord', () => {
     class Test extends TestRecord {}
-    Test.register()
+    before(() => {
+        Test.register()
+    })
     beforeEach(async () =>
         await query(`MATCH (n) DETACH DELETE n`))
 
@@ -53,12 +55,17 @@ describe('ActiveRecord', () => {
         class TestObject extends TestRecord {
             get subjects() { return this.getRelation('relation') }
         }
-        TestObject.register()
         class TestSubject extends TestRecord {
-            get objects() { return this.getRelation('relation') }
+            get subjects() { return this.getRelation('relation') }
+
+            get objects() { return this.getRelation('relation', {direction: -1}) }
         }
-        TestSubject.register()
-        let object, subject
+        let object
+        let subject
+        before(() => {
+            TestObject.register()
+            TestSubject.register()
+        })
         beforeEach(async () => {
             await (object = new TestObject()).save()
             await (subject = new TestSubject()).save()
@@ -78,6 +85,10 @@ describe('ActiveRecord', () => {
                 expect(await object.subjects.size()).to.be.equal(1))
             it('should successfully resolve subjects using Relation#entries', async () =>
                 expect(await object.subjects.entries()).to.has.length(1))
+            it('should contain reverse relations using Relation#entries', async () =>
+                expect(await subject.objects.entries()).to.has.length(1))
+            it('should contain shared namespace but different direction relations using Relation#entries', async () =>
+                expect(await subject.subjects.entries()).to.has.length(0))
             it('should resolve objects of subject', async () =>
                 expect(await subject.objects.entries()).to.has.length(1))
             it('should successfully delete subjects using Relation#delete', async () => {
@@ -91,12 +102,71 @@ describe('ActiveRecord', () => {
             })
         })
     })
+    describe('self-relations', () => {
+        class TestSelfObject extends TestRecord {
+            get subjects() { return this.getRelation('ref') }
+        }
+        let object1
+        let object2
+        before(() => {
+            TestSelfObject.register()
+        })
+        beforeEach(async () => {
+            await (object1 = new TestSelfObject()).save()
+            await (object2 = new TestSelfObject()).save()
+        })
+        it('should not have item by default', async () => {
+            expect({
+                forward: await object1.subjects.has(object2),
+                deepForward: await object1.subjects.hasDeep(object2),
+                reverse: await object2.subjects.has(object1),
+                deepReverse: await object2.subjects.hasDeep(object1)
+            }).to.deep.equal({
+                forward: false,
+                deepForward: false,
+                reverse: false,
+                deepReverse: false
+            })
+        })
+
+        it('should contain item', async () => {
+            await object1.subjects.add(object2)
+            expect({
+                forward: await object1.subjects.has(object2),
+                deepForward: await object1.subjects.hasDeep(object2),
+                reverse: await object2.subjects.has(object1),
+                deepReverse: await object2.subjects.hasDeep(object1)
+            }).to.deep.equal({
+                forward: true,
+                deepForward: true,
+                reverse: false,
+                deepReverse: false
+            })
+        })
+
+        it('should deeply contain item', async () => {
+            const object3 = await new TestSelfObject().save()
+            await object1.subjects.add(object2)
+            await object2.subjects.add(object3)
+            expect({
+                forward: await object1.subjects.has(object3),
+                deepForward: await object1.subjects.hasDeep(object3),
+                reverse: await object2.subjects.has(object1),
+                deepReverse: await object2.subjects.hasDeep(object1)
+            }).to.deep.equal({
+                forward: false,
+                deepForward: true,
+                reverse: false,
+                deepReverse: false
+            })
+        })
+    })
 
     describe('querying', () => {
         const test = 'test'
         let items
         beforeEach(async () =>
-            items = await Promise.all(function* () {
+            items = await Promise.all(function*() {
                 let idx = 0
                 do yield new Test({idx, test}).save()
                 while (idx++ < 5)
@@ -110,13 +180,13 @@ describe('ActiveRecord', () => {
             const limit = 2
             const result = await Test.where({test}, {limit: 2, order: 'idx ASC'})
             expect(result).to.have.length(limit)
-            expect(result.map(res => res.idx)).to.deep.equal([0,1])
+            expect(result.map(res => res.idx)).to.deep.equal([0, 1])
         })
         it('should support limit', async () => {
             const limit = 2
             const result = await Test.where({test}, {limit: 2, offset: 1, order: 'idx ASC'})
             expect(result).to.have.length(limit)
-            expect(result.map(res => res.idx)).to.deep.equal([1,2])
+            expect(result.map(res => res.idx)).to.deep.equal([1, 2])
         })
     })
 })
