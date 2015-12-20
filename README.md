@@ -48,7 +48,7 @@ Created_at and updated_at can be used for sort.
 ## API
 
 ```typescript
-class Record {
+export class Record {
     static label: string //class name by default; can be overriden
 
     static register(): void   
@@ -59,7 +59,9 @@ class Record {
     
     constructor (properties?: Object)
     
-    getRelation(relationLabel: string, {targetLabel?: string, direction: [-1,0,1]}): Relation
+    defineRelations({
+        [key: string]: RelationArgs | Relation  
+    })
     
     async save(properties?: Object): void 
     async delete(): void 
@@ -73,7 +75,8 @@ All of the relations are non-directed polymorphic many-to-many, but actually you
 Just think about relation as about async Set as interface is nearly same (except properties for Relation#entries).
 
 ```typescript
-class Relation {
+export class Relation {
+    constructor(sourceNode: Record, relationLabel: string, {targetLabel?: string, direction: [-1,0,1]})
     async size(): number
     async has(...records: Array<Record>): boolean
     async hasDeep(...records: Array<Record>): boolean

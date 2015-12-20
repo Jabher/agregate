@@ -53,12 +53,21 @@ describe('ActiveRecord', () => {
 
     describe('relations', () => {
         class TestObject extends TestRecord {
-            get subjects() { return this.getRelation('relation') }
+            constructor(...args) {
+                super(...args)
+                this.defineRelations({
+                    subjects: ['relation']
+                })
+            }
         }
         class TestSubject extends TestRecord {
-            get subjects() { return this.getRelation('relation') }
-
-            get objects() { return this.getRelation('relation', {direction: -1}) }
+            constructor(...args) {
+                super(...args)
+                this.defineRelations({
+                    subjects: ['relation'],
+                    objects: ['relation', {direction: -1}]
+                })
+            }
         }
         let object
         let subject
@@ -104,7 +113,12 @@ describe('ActiveRecord', () => {
     })
     describe('self-relations', () => {
         class TestSelfObject extends TestRecord {
-            get subjects() { return this.getRelation('ref') }
+            constructor(...args) {
+                super(...args)
+                this.defineRelations({
+                    subjects: ['ref']
+                })
+            }
         }
         let object1
         let object2
