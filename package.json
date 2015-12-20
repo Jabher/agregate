@@ -7,7 +7,7 @@
     "test": "./node_modules/.bin/mocha",
     "build": "./node_modules/.bin/babel lib --out-dir build",
     "preversion": "git add lib/* test/* && npm test && npm run build",
-    "postversion": "./node_modules/.bin/jscs --fix lib && git push -u origin master && npm publish"
+    "postversion": "./node_modules/.bin/jscs --fix lib && git commit && git push -u origin master && npm publish"
   },
   "keywords": [
     "activeRecord",
