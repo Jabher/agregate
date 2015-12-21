@@ -112,23 +112,11 @@ describe('ActiveRecord', () => {
         })
         describe('deep', () => {
             class TestSourceObject extends TestRecord {
-                constructor(...args) {
-                    super(...args)
-                    const intermediateRelation =
-                        new Relation(this, 'rel1', {target: TestIntermediateObject})
-                    this.defineRelations({
-                        intermediateObjects: intermediateRelation,
-                        endObjects: new Relation(intermediateRelation, 'rel2', {target: TestEndObject})
-                    })
-                }
+                intermediateObjects = new Relation(this, 'rel1', {target: TestIntermediateObject})
+                endObjects = new Relation(this.intermediateObjects, 'rel2', {target: TestEndObject})
             }
             class TestIntermediateObject extends TestRecord {
-                constructor(...args) {
-                    super(...args)
-                    this.defineRelations({
-                        endObjects: new Relation(this, 'rel2', {target: TestEndObject})
-                    })
-                }
+                endObjects = new Relation(this, 'rel2', {target: TestEndObject})
             }
             class TestEndObject extends TestRecord {}
 
@@ -182,12 +170,7 @@ describe('ActiveRecord', () => {
     })
     describe('self-relations', () => {
         class TestSelfObject extends TestRecord {
-            constructor(...args) {
-                super(...args)
-                this.defineRelations({
-                    subjects: ['ref']
-                })
-            }
+            subjects = new Relation(this, 'ref')
         }
         let object1
         let object2
