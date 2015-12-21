@@ -49,10 +49,9 @@ Created_at and updated_at can be used for sort.
 
 ```typescript
 export class Record {
+    static indexes: Enumerable<String>
     static label: string //class name by default; can be overriden
-
     static register(): void   
-    
     static async where(properties?: Object): Array<Record> 
     
     [property: string]: boolean | number | string
@@ -60,9 +59,8 @@ export class Record {
     constructor (properties?: Object)
     
     defineRelations({
-        [key: string]: RelationArgs | Relation  
+        [key: string]: Relation  
     })
-    
     async save(properties?: Object): void 
     async delete(): void 
 }
@@ -76,10 +74,9 @@ Just think about relation as about async Set as interface is nearly same (except
 
 ```typescript
 export class Relation {
-    constructor(sourceNode: Record, relationLabel: string, {targetLabel?: string, direction: [-1,0,1]})
+    constructor(sourceNode: Record | Relation, relationLabel: string, {target?: Record, direction: [-1,0,1]})
     async size(): number
     async has(...records: Array<Record>): boolean
-    async hasDeep(...records: Array<Record>): boolean
     async add(record: Record): void
     async add(...records: Array<Record>): void
     async delete(record: Record): void
@@ -98,6 +95,23 @@ class ExampleSubject extends Record {
     get objects() { return this.getRelation('relation') }
 }
 ExampleSubject.register()
+```
+
+Deep relations? No problem. Of course, you cannot add elements there 
+(as far as it's unknown to which intermediate node to connect them)
+but you can do everything else.
+
+```javascript
+class SourceObject extends Record {
+    constructor(...args) {
+        super(...args)
+        const intermediateRelation = new Relation(this, 'rel1', {target: IntermediateObject})
+        this.defineRelations({
+            intermediateObjects: intermediateRelation,
+            endObjects: new Relation(intermediateRelation, 'rel2', {target: EndObject})
+        })
+    }
+}
 ```
 
 ##FAQ

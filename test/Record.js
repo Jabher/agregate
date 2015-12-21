@@ -1,6 +1,6 @@
 import 'babel-polyfill'
 import {expect} from 'chai'
-import {Record, GraphConnection} from '../lib/index'
+import {Record, GraphConnection, Relation} from '../lib/index'
 
 const connection = new GraphConnection('http://neo4j:password@localhost:7474')
 class TestRecord extends Record {
@@ -110,6 +110,75 @@ describe('ActiveRecord', () => {
                 expect(await object.subjects.size()).to.be.equal(0)
             })
         })
+        describe('deep', () => {
+            class TestSourceObject extends TestRecord {
+                constructor(...args) {
+                    super(...args)
+                    const intermediateRelation =
+                        new Relation(this, 'rel1', {target: TestIntermediateObject})
+                    this.defineRelations({
+                        intermediateObjects: intermediateRelation,
+                        endObjects: new Relation(intermediateRelation, 'rel2', {target: TestEndObject})
+                    })
+                }
+            }
+            class TestIntermediateObject extends TestRecord {
+                constructor(...args) {
+                    super(...args)
+                    this.defineRelations({
+                        endObjects: new Relation(this, 'rel2', {target: TestEndObject})
+                    })
+                }
+            }
+            class TestEndObject extends TestRecord {}
+
+            let startObject
+            let midObject
+            let endObject
+            before(() => {
+                TestSourceObject.register()
+                TestIntermediateObject.register()
+                TestEndObject.register()
+            })
+
+            beforeEach(async () => {
+                await (startObject = new TestSourceObject()).save()
+                await (midObject = new TestIntermediateObject()).save()
+                await (endObject = new TestEndObject()).save()
+
+                // spoofing for tests whether they are not captured by accident
+
+                new TestSourceObject().save()
+                new TestIntermediateObject().save()
+                new TestEndObject().save()
+            })
+            describe('prequisitions', () => {
+                it('should be empty by default using Relation#size', async () =>
+                    expect(await startObject.endObjects.size()).to.equal(0))
+                it('should be empty by default using Relation#entries', async () =>
+                    expect(await startObject.endObjects.entries()).to.have.length(0))
+            })
+            describe('manipulations', () => {
+                beforeEach(async () => {
+                    await startObject.intermediateObjects.add(midObject)
+                    await midObject.endObjects.add(endObject)
+                })
+                it('should contain 1 item using Relation#size', async () =>
+                    expect(await startObject.endObjects.size()).to.equal(1))
+                it('should contain 1 item using Relation#entries', async () =>
+                    expect(await startObject.endObjects.entries()).to.have.length(1))
+                it('should contain endItem', async () =>
+                    expect(await startObject.endObjects.entries()).to.have.deep.property('[0].uuid', endObject.uuid))
+                it('should remove the item using Relation#clear', async () => {
+                    await startObject.endObjects.clear()
+                    expect(await startObject.endObjects.size()).to.equal(0)
+                })
+                it('should remove the item using Relation#delete', async () => {
+                    await startObject.endObjects.delete(endObject)
+                    expect(await startObject.endObjects.size()).to.equal(0)
+                })
+            })
+        })
     })
     describe('self-relations', () => {
         class TestSelfObject extends TestRecord {
@@ -132,14 +201,10 @@ describe('ActiveRecord', () => {
         it('should not have item by default', async () => {
             expect({
                 forward: await object1.subjects.has(object2),
-                deepForward: await object1.subjects.hasDeep(object2),
                 reverse: await object2.subjects.has(object1),
-                deepReverse: await object2.subjects.hasDeep(object1)
             }).to.deep.equal({
                 forward: false,
-                deepForward: false,
                 reverse: false,
-                deepReverse: false
             })
         })
 
@@ -147,14 +212,10 @@ describe('ActiveRecord', () => {
             await object1.subjects.add(object2)
             expect({
                 forward: await object1.subjects.has(object2),
-                deepForward: await object1.subjects.hasDeep(object2),
                 reverse: await object2.subjects.has(object1),
-                deepReverse: await object2.subjects.hasDeep(object1)
             }).to.deep.equal({
                 forward: true,
-                deepForward: true,
                 reverse: false,
-                deepReverse: false
             })
         })
 
@@ -164,14 +225,10 @@ describe('ActiveRecord', () => {
             await object2.subjects.add(object3)
             expect({
                 forward: await object1.subjects.has(object3),
-                deepForward: await object1.subjects.hasDeep(object3),
                 reverse: await object2.subjects.has(object1),
-                deepReverse: await object2.subjects.hasDeep(object1)
             }).to.deep.equal({
                 forward: false,
-                deepForward: true,
                 reverse: false,
-                deepReverse: false
             })
         })
     })
