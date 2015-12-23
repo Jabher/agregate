@@ -54,13 +54,10 @@ export class Record {
     static register(): void   
     static async where(properties?: Object): Array<Record> 
     
-    [property: string]: boolean | number | string
+    [property: string]: boolean | number | string | Relation
     
     constructor (properties?: Object)
     
-    defineRelations({
-        [key: string]: Relation  
-    })
     async save(properties?: Object): void 
     async delete(): void 
 }
@@ -68,19 +65,20 @@ export class Record {
 
 
 ## Relations?
-Yes, there are full-featured relations, see API.
+Yes, there are fully-featured relations, see API.
 All of the relations are non-directed polymorphic many-to-many, but actually you can not care about that.
 Just think about relation as about async Set as interface is nearly same (except properties for Relation#entries).
 
 ```typescript
+var RecordSet = Array<Record> | Promise<Record | Array<Record>>  
+
 export class Relation {
     constructor(sourceNode: Record | Relation, relationLabel: string, {target?: Record, direction: [-1,0,1]})
     async size(): number
-    async has(...records: Array<Record>): boolean
-    async add(record: Record): void
-    async add(...records: Array<Record>): void
-    async delete(record: Record): void
-    async delete(...records: Array<Record>): void
+    async has(records: RecordSet | ...records: RecordSet): boolean
+    async intersect(records: RecordSet | ...records: RecordSet): Array<Records>
+    async add(records: RecordSet | ...records: RecordSet): void
+    async delete(records: RecordSet | ...records: RecordSet): void
     async entries(properies?: Object, type?: string): Array<Record>
 }
 ```

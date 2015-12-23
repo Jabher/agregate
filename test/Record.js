@@ -1,4 +1,3 @@
-import 'babel-polyfill'
 import {expect} from 'chai'
 import {Record, GraphConnection, Relation} from '../lib/index'
 
@@ -53,21 +52,11 @@ describe('ActiveRecord', () => {
 
     describe('relations', () => {
         class TestObject extends TestRecord {
-            constructor(...args) {
-                super(...args)
-                this.defineRelations({
-                    subjects: ['relation']
-                })
-            }
+            subjects = new Relation(this, 'relation')
         }
         class TestSubject extends TestRecord {
-            constructor(...args) {
-                super(...args)
-                this.defineRelations({
-                    subjects: ['relation'],
-                    objects: ['relation', {direction: -1}]
-                })
-            }
+            subjects = new Relation(this, 'relation')
+            objects = new Relation(this, 'relation', {direction: -1})
         }
         let object
         let subject
@@ -86,6 +75,13 @@ describe('ActiveRecord', () => {
             it('should have size 0', async () =>
                 expect(await object.subjects.size()).to.be.equal(0))
         })
+
+        describe('promise-management', () => {
+            it('should support promise entry sources', async () => {
+                await object.subjects.add(TestSubject.where({uuid: subject.uuid}))
+                expect(await object.subjects.size()).to.be.equal(1)
+            })
+        })
         describe('manipulations', () => {
             beforeEach(async () =>
                 await object.subjects.add(subject))
@@ -100,9 +96,26 @@ describe('ActiveRecord', () => {
                 expect(await subject.subjects.entries()).to.has.length(0))
             it('should resolve objects of subject', async () =>
                 expect(await subject.objects.entries()).to.has.length(1))
+            it('should resolve objects of subject by props', async () =>
+                expect(await subject.objects.entries({uuid: object.uuid})).to.has.length(1))
+            it('should not resolve objects not of subject by props', async () =>
+                expect(await subject.objects.entries({uuid: (await new TestObject().save()).uuid})).to.has.length(0))
+            it('should resolve intersect objects using Relation#intersect', async () =>
+                expect(await subject.objects.intersect(
+                    object,
+                    new TestObject().save()
+                )).to.have.length(1))
+            it('should resolve objects of subject', async () =>
+                expect(await subject.objects.has(TestObject.where({}))).to.be.equal(true))
+            it('should not resolve wrong objects', async () =>
+                expect(await subject.objects.has(TestSubject.where({}))).to.be.equal(false))
             it('should successfully delete subjects using Relation#delete', async () => {
                 const [entry] = await object.subjects.entries()
                 await object.subjects.delete(entry)
+                expect(await object.subjects.size()).to.be.equal(0)
+            })
+            it('should successfully delete subjects using Relation#delete and promises', async () => {
+                await object.subjects.delete(object.subjects.entries())
                 expect(await object.subjects.size()).to.be.equal(0)
             })
             it('should successfully delete subjects using Relation#clear', async () => {
@@ -184,10 +197,10 @@ describe('ActiveRecord', () => {
         it('should not have item by default', async () => {
             expect({
                 forward: await object1.subjects.has(object2),
-                reverse: await object2.subjects.has(object1),
+                reverse: await object2.subjects.has(object1)
             }).to.deep.equal({
                 forward: false,
-                reverse: false,
+                reverse: false
             })
         })
 
@@ -195,10 +208,10 @@ describe('ActiveRecord', () => {
             await object1.subjects.add(object2)
             expect({
                 forward: await object1.subjects.has(object2),
-                reverse: await object2.subjects.has(object1),
+                reverse: await object2.subjects.has(object1)
             }).to.deep.equal({
                 forward: true,
-                reverse: false,
+                reverse: false
             })
         })
 
@@ -208,10 +221,10 @@ describe('ActiveRecord', () => {
             await object2.subjects.add(object3)
             expect({
                 forward: await object1.subjects.has(object3),
-                reverse: await object2.subjects.has(object1),
+                reverse: await object2.subjects.has(object1)
             }).to.deep.equal({
                 forward: false,
-                reverse: false,
+                reverse: false
             })
         })
     })
