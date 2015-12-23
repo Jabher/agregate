@@ -24,6 +24,12 @@ describe('ActiveRecord', () => {
         it('should create new record', async () =>
             expect(await Test.byUuid(instance.uuid))
                 .to.deep.include(opts))
+        it('should create new record by Record#createOrUpdate', async () =>
+            expect(await Test.firstOrInitialize(opts))
+                .to.deep.include(opts))
+        it('should return existing record if exists by Record#createOrUpdate', async () =>
+            expect(await Test.firstOrInitialize(opts))
+                .to.deep.include({uuid: instance.uuid}))
         it('should destroy existing record', async () => {
             await instance.destroy()
             return expect(await Test.byUuid(instance.uuid)).to.equal.undefined
