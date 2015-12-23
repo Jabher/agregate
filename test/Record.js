@@ -1,6 +1,7 @@
+import 'babel-polyfill'
 import {expect} from 'chai'
-import {Record, GraphConnection, Relation} from '../lib/index'
 
+const {Record, GraphConnection, Relation} = global
 const connection = new GraphConnection('http://neo4j:password@localhost:7474')
 class TestRecord extends Record {
     static connection = connection

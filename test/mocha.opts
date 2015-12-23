@@ -1,3 +1,2 @@
---compilers js:babel-register
---require babel-polyfill
---require ./lib/index.js
+--growl
+--globals Record,GraphConnection,Relation
