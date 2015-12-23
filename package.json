@@ -4,11 +4,11 @@
   "description": "Schema-less ActiveRecord over neo4j",
   "main": "build/index.js",
   "scripts": {
-    "test": "./node_modules/.bin/mocha --compilers js:babel-register --require ./test/globals/lib",
-    "test-against-build": "./node_modules/.bin/mocha --bail --reporter nyan --require ./test/globals/build",
-    "build": "./node_modules/.bin/babel lib --out-dir build",
+    "test": "mocha --compilers js:babel-register --require ./test/globals/lib",
+    "test-against-build": "mocha --bail --reporter nyan --require ./test/globals/build",
+    "build": "babel lib --out-dir build",
     "preversion": "git add lib/* test/* && npm run build && npm run test-against-build",
-    "postversion": "./node_modules/.bin/jscs --fix lib && git commit --amend --no-edit && git push -u origin master && npm publish && rm -rf ./build"
+    "postversion": "jscs --fix lib && git commit --amend --no-edit && git push -u origin master && npm publish && rm -rf ./build"
   },
   "keywords": [
     "activeRecord",
