@@ -119,13 +119,18 @@ class SourceObject extends Record {
 
 There are 6 hooks: before and after create, update and delete. Fully hooked record class will look like this:
 
-```javascript
+```typescript
+interface QueryRunner {
+    (cypher: Cypher): Promise<any>
+    (...cyphers: Array<Cypher>): Promise<any>
+}
+
 class User extends Record {
-    async beforeCreate(query) { await query(Cypher.tag`something...`) }
-    async afterCreate(query) { await query(Cypher.tag`something...`) }
-    async beforeUpdate(query) { await query(Cypher.tag`something...`) }
-    async afterUpdate(query) { await query(Cypher.tag`something...`) }
-    async before(query) { await query(Cypher.tag`something...`) }
+    async beforeCreate(query: QueryRunner) { await query(Cypher.tag`something...`) }
+    async afterCreate(query: QueryRunner) { await query(Cypher.tag`something...`) }
+    async beforeUpdate(query: QueryRunner) { await query(Cypher.tag`something...`) }
+    async afterUpdate(query: QueryRunner) { await query(Cypher.tag`something...`) }
+    async before(query: QueryRunner) { await query(Cypher.tag`something...`) }
 }
 ```
 
@@ -147,6 +152,9 @@ Just use your imagination. It's just common ES6 class which is getting dumped to
 - [x] offset and limit
 - [x] has
 - [x] deep relations
-- [ ] indexes
+- [x] indexes
+- [ ] rich Record.where query syntax ($lt, $gt, $lte, $gte, $has, $in and so on)
 - [ ] total test coverage
 - [ ] performance optimisations
+- [ ] optimistic lock
+- [ ] pessimistic lock

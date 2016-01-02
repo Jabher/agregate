@@ -1,20 +1,19 @@
 import 'babel-polyfill'
-import {expect} from 'chai'
-
+import chai, {expect} from 'chai'
+chai.use(require('chai-spies'))
 import {Cypher} from 'cypher-talker'
 
-const {Record, GraphConnection, Relation} = global
+const {Record: RefRecord, GraphConnection, Relation} = global
 const connection = new GraphConnection('http://neo4j:password@localhost:7474')
-class TestRecord extends Record {
+class Record extends RefRecord {
     static connection = connection
 }
 const query = connection.query.bind(connection)
 
-describe('ActiveRecord', () => {
-    class Test extends TestRecord {}
-    before(() => {
-        Test.register()
-    })
+describe.only('ActiveRecord', () => {
+    class Test extends Record {}
+    beforeEach(async () =>
+        await Test.register())
     beforeEach(async () =>
         await query(Cypher.tag`MATCH (n) DETACH DELETE n`))
 
@@ -62,10 +61,10 @@ describe('ActiveRecord', () => {
     })
 
     describe('relations', () => {
-        class TestObject extends TestRecord {
+        class TestObject extends Record {
             subjects = new Relation(this, 'relation')
         }
-        class TestSubject extends TestRecord {
+        class TestSubject extends Record {
             subjects = new Relation(this, 'relation')
             objects = new Relation(this, 'relation', {direction: -1})
         }
@@ -135,14 +134,14 @@ describe('ActiveRecord', () => {
             })
         })
         describe('deep', () => {
-            class TestSourceObject extends TestRecord {
+            class TestSourceObject extends Record {
                 intermediateObjects = new Relation(this, 'rel1', {target: TestIntermediateObject})
                 endObjects = new Relation(this.intermediateObjects, 'rel2', {target: TestEndObject})
             }
-            class TestIntermediateObject extends TestRecord {
+            class TestIntermediateObject extends Record {
                 endObjects = new Relation(this, 'rel2', {target: TestEndObject})
             }
-            class TestEndObject extends TestRecord {}
+            class TestEndObject extends Record {}
 
             let startObject
             let midObject
@@ -193,7 +192,7 @@ describe('ActiveRecord', () => {
         })
     })
     describe('self-relations', () => {
-        class TestSelfObject extends TestRecord {
+        class TestSelfObject extends Record {
             subjects = new Relation(this, 'ref')
         }
         let object1
@@ -265,6 +264,87 @@ describe('ActiveRecord', () => {
             const result = await Test.where({test}, {limit: 2, offset: 1, order: 'idx ASC'})
             expect(result).to.have.length(limit)
             expect(result.map(res => res.idx)).to.deep.equal([1, 2])
+        })
+    })
+    describe('hooks', () => {
+        let testRecord
+        beforeEach(() =>
+            testRecord = new Test())
+
+        it(`should process create hooks`, async () => {
+            const beforeHookName = `beforeCreate`
+            const afterHookName = `afterCreate`
+            testRecord[beforeHookName] = chai.spy(() =>
+                expect(testRecord[afterHookName]).to.be.not.called())
+            testRecord[afterHookName] = chai.spy(() =>
+                expect(testRecord[beforeHookName]).to.be.called())
+            await testRecord.save()
+            expect(testRecord[beforeHookName], 'before hook').to.be.called.once()
+            expect(testRecord[afterHookName], 'after hook').to.be.called.once()
+        })
+        it(`should process update hooks`, async () => {
+            const beforeHookName = `beforeUpdate`
+            const afterHookName = `afterUpdate`
+            await testRecord.save()
+            testRecord[beforeHookName] = chai.spy(() =>
+                expect(testRecord[afterHookName]).to.be.not.called())
+            testRecord[afterHookName] = chai.spy(() =>
+                expect(testRecord[beforeHookName]).to.be.called())
+            await testRecord.save()
+            expect(testRecord[beforeHookName], 'before hook').to.be.called.once()
+            expect(testRecord[afterHookName], 'after hook').to.be.called.once()
+        })
+        it(`should process destroy hooks`, async () => {
+            const beforeHookName = `beforeDestroy`
+            const afterHookName = `afterDestroy`
+            await testRecord.save()
+            testRecord[beforeHookName] = chai.spy(() =>
+                expect(testRecord[afterHookName]).to.be.not.called())
+            testRecord[afterHookName] = chai.spy(() =>
+                expect(testRecord[beforeHookName]).to.be.called())
+            await testRecord.destroy()
+            expect(testRecord[beforeHookName], 'before hook').to.be.called.once()
+            expect(testRecord[afterHookName], 'after hook').to.be.called.once()
+        })
+
+        it('should support transactions', async () => {
+            const beforeQuery = new Promise((resolve, reject) =>
+                testRecord.beforeCreate = async function(query) {
+                    try {
+                        expect(this.state).to.equal(1)
+                        this.state = 2
+                        Object.defineProperty(this, 'connection', {value: {query}, configurable: true})
+                        expect(await Test.where({state: 1})).to.have.length(0)
+                        expect(await Test.where({state: 2})).to.have.length(0)
+                        resolve()
+                    } catch (e) {
+                        reject(e)
+                        throw e
+                    } finally {
+                        delete this.connection
+                    }
+                })
+            const afterQuery = new Promise((resolve, reject) =>
+                testRecord.afterCreate = async function(query) {
+                    try {
+                        expect(this.state).to.equal(2)
+                        Object.defineProperty(this, 'connection', {value: {query}, configurable: true})
+                        expect(await Test.where({state: 1})).to.have.length(0)
+                        expect(await Test.where({state: 2})).to.have.length(0)
+                        resolve()
+                    } catch (e) {
+                        reject(e)
+                        throw e
+                    } finally {
+                        delete this.connection
+                    }
+                })
+            // important - no async keyword!
+            testRecord.save({state: 1})
+            await beforeQuery
+            await afterQuery
+            expect(await Test.where({state: 1})).to.have.length(0)
+            expect(await Test.where({state: 2})).to.have.length(1)
         })
     })
     //todo before&&after hooks
