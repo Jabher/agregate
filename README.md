@@ -1,6 +1,8 @@
 # ActiveRecord es6/7-oriented implementation over neo4j
-_this software is early alpha stage and is not supposed to be used in production_
-## Why?
+_this software is alpha stage and is not supposed to be used in production_
+## What is it?
+
+ActiveRecord is common pattern that is, speaking in general
 
 1. I hate schemas. 
 No, I do not have something personal against them, but actual schema usages are not totally DRY and can cause an error. 
@@ -35,15 +37,16 @@ class User extends Record {
 User.register()
 
 async function main () {
-    const user = new User({first_name: 'John', last_name: 'Doe'})
+    const user = new User({first_name: 'John'})
+    user.last_name = 'Doe'
     await user.save()
     const [resolvedUser] = await User.where({first_name: 'Jonh'})
     resolvedUser.debug() // => {first_name: 'John', last_name: 'Doe', uuid: '###', created_at: ###, updated_at: ###}
 }
 ```
 
-Yes, UUIDv4 is used instead of primary key. But you can ignore it (unless you're trying to hack the lib)
-Created_at and updated_at can be used for sort.
+UUIDv4 is used instead of primary key. But you can ignore it (unless you're trying to hack the lib)
+Created_at and updated_at can be used for sorting purposes.
  
 ## API
 
@@ -59,12 +62,12 @@ export class Record {
     constructor (properties?: Object)
     
     async save(properties?: Object): void 
-    async delete(): void 
+    async delete(): void     
 }
 ```
 
 
-## Relations?
+## Relations
 Yes, there are fully-featured relations, see API.
 All of the relations are non-directed polymorphic many-to-many, but actually you can not care about that.
 Just think about relation as about async Set as interface is nearly same (except properties for Relation#entries).
@@ -109,6 +112,20 @@ class SourceObject extends Record {
             endObjects: new Relation(intermediateRelation, 'rel2', {target: EndObject})
         })
     }
+}
+```
+
+## Hooks
+
+There are 6 hooks: before and after create, update and delete. Fully hooked record class will look like this:
+
+```javascript
+class User extends Record {
+    async beforeCreate(query) { await query(Cypher.tag`something...`) }
+    async afterCreate(query) { await query(Cypher.tag`something...`) }
+    async beforeUpdate(query) { await query(Cypher.tag`something...`) }
+    async afterUpdate(query) { await query(Cypher.tag`something...`) }
+    async before(query) { await query(Cypher.tag`something...`) }
 }
 ```
 

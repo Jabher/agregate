@@ -1,6 +1,8 @@
 import 'babel-polyfill'
 import {expect} from 'chai'
 
+import {Cypher} from 'cypher-talker'
+
 const {Record, GraphConnection, Relation} = global
 const connection = new GraphConnection('http://neo4j:password@localhost:7474')
 class TestRecord extends Record {
@@ -14,7 +16,7 @@ describe('ActiveRecord', () => {
         Test.register()
     })
     beforeEach(async () =>
-        await query(`MATCH (n) DETACH DELETE n`))
+        await query(Cypher.tag`MATCH (n) DETACH DELETE n`))
 
     describe('classes', () => {
         let instance
@@ -32,8 +34,10 @@ describe('ActiveRecord', () => {
             expect(await Test.firstOrInitialize(opts))
                 .to.deep.include({uuid: instance.uuid}))
         it('should destroy existing record', async () => {
+            const uuid = instance.uuid
             await instance.destroy()
-            return expect(await Test.byUuid(instance.uuid)).to.equal.undefined
+            expect(instance.uuid).to.equal(undefined)
+            expect(await Test.byUuid(uuid)).to.equal(undefined)
         })
     })
     describe('props', () => {
@@ -104,9 +108,9 @@ describe('ActiveRecord', () => {
             it('should resolve objects of subject', async () =>
                 expect(await subject.objects.entries()).to.has.length(1))
             it('should resolve objects of subject by props', async () =>
-                expect(await subject.objects.entries({uuid: object.uuid})).to.has.length(1))
+                expect(await subject.objects.where({uuid: object.uuid})).to.has.length(1))
             it('should not resolve objects not of subject by props', async () =>
-                expect(await subject.objects.entries({uuid: (await new TestObject().save()).uuid})).to.has.length(0))
+                expect(await subject.objects.where({uuid: (await new TestObject().save()).uuid})).to.has.length(0))
             it('should resolve intersect objects using Relation#intersect', async () =>
                 expect(await subject.objects.intersect(
                     object,
@@ -263,4 +267,5 @@ describe('ActiveRecord', () => {
             expect(result.map(res => res.idx)).to.deep.equal([1, 2])
         })
     })
+    //todo before&&after hooks
 })
