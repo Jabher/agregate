@@ -10,12 +10,12 @@ class Record extends RefRecord {
 }
 const query = connection.query.bind(connection)
 
-describe.only('ActiveRecord', () => {
+describe('ActiveRecord', () => {
     class Test extends Record {}
     beforeEach(async () =>
-        await Test.register())
-    beforeEach(async () =>
         await query(Cypher.tag`MATCH (n) DETACH DELETE n`))
+    beforeEach(async () =>
+        await Test.register())
 
     describe('classes', () => {
         let instance
@@ -85,7 +85,6 @@ describe.only('ActiveRecord', () => {
             it('should have size 0', async () =>
                 expect(await object.subjects.size()).to.be.equal(0))
         })
-
         describe('promise-management', () => {
             it('should support promise entry sources', async () => {
                 await object.subjects.add(TestSubject.where({uuid: subject.uuid}))
@@ -159,9 +158,9 @@ describe.only('ActiveRecord', () => {
 
                 // spoofing for tests whether they are not captured by accident
 
-                new TestSourceObject().save()
-                new TestIntermediateObject().save()
-                new TestEndObject().save()
+                await new TestSourceObject().save()
+                await new TestIntermediateObject().save()
+                await new TestEndObject().save()
             })
             describe('prequisitions', () => {
                 it('should be empty by default using Relation#size', async () =>
@@ -347,5 +346,58 @@ describe.only('ActiveRecord', () => {
             expect(await Test.where({state: 2})).to.have.length(1)
         })
     })
-    //todo before&&after hooks
+    describe('querying', () => {
+        describe('numbers', () => {
+            beforeEach(() => Test.save({test: 1}, {test: 2}, {test: 3}))
+
+            it('should support $lt', async () =>
+                expect(await Test.where({test: {$lt: 2}}), {order: 'test'}).to.have.length(1)
+                    .and.to.have.deep.property(`[0].test`, 1))
+            it('should support $lte', async () =>
+                expect(await Test.where({test: {$lte: 2}}, {order: 'test'})).to.have.length(2)
+                    .and.to.have.deep.property(`[1].test`, 2))
+            it('should support $gt', async () =>
+                expect(await Test.where({test: {$gt: 2}}), {order: 'test'}).to.have.length(1)
+                    .and.to.have.deep.property(`[0].test`, 3))
+            it('should support $gte', async () =>
+                expect(await Test.where({test: {$gte: 2}}, {order: 'test'})).to.have.length(2)
+                    .and.to.have.deep.property(`[0].test`, 2))
+
+        })
+        describe('strings', () => {
+            beforeEach(() => Test.save({test: 'abcde'}, {test: 'ecdba'}, {test: 'foo'}))
+            it('should support $startsWith', async () =>
+                expect(await Test.where({test: {$startsWith: 'abc'}})).to.have.length(1)
+                    .and.to.have.deep.property(`[0].test`, 'abcde'))
+            it('should support $startsWith', async () =>
+                expect(await Test.where({test: {$startsWith: 'abc'}})).to.have.length(1)
+                    .and.to.have.deep.property(`[0].test`, 'abcde'))
+            it('should support $endsWith', async () =>
+                expect(await Test.where({test: {$endsWith: 'cde'}})).to.have.length(1)
+                    .and.to.have.deep.property(`[0].test`, 'abcde'))
+            it('should support $contains', async () =>
+                expect(await Test.where({test: {$contains: 'a'}})).to.have.length(2))
+        })
+        describe('general', () => {
+            beforeEach(() => Test.save({test: true}, {test: false}, {test2: 'test2'}))
+            it('should support truthy $exists', async () =>
+                expect(await Test.where({test: {$exists: true}})).to.have.length(2))
+            it('should support falsy $exists', async () =>
+                expect(await Test.where({test: {$exists: false}})).to.have.length(1)
+                    .and.to.have.deep.property(`[0].test2`, 'test2'))
+        })
+        describe('arrays', () => {
+            beforeEach(async () => await Test.save(
+                {test: [1,2,3,4,5], test2: 1},
+                {test: [6,7,8,9,0], test2: 2}))
+
+
+            it('should support $has', async () =>
+                expect(await Test.where({test: {$has: 1}})).to.have.length(1)
+                    .and.to.have.deep.property(`[0].test2`, 1))
+            it('should support $in', async () =>
+                expect(await Test.where({test2: {$in: [1,1,1,5,5]}})).to.have.length(1)
+                    .and.to.have.deep.property(`[0].test2`, 1))
+        })
+    })
 })

@@ -55,7 +55,7 @@ export class Record {
     static indexes: Enumerable<String>
     static label: string //class name by default; can be overriden
     static register(): void   
-    static async where(properties?: Object): Array<Record> 
+    static async where(properties?: Object, options?: {offset?: number, limit?: number, order: string | Array<string>}): Array<Record> 
     
     [property: string]: boolean | number | string | Relation
     
@@ -66,6 +66,33 @@ export class Record {
 }
 ```
 
+## Querying
+
+First of all, we need to keep in mind types in neo4j. They are:
+- string
+- number
+- boolean
+- typed array of any of types above
+_disclaimer: speaking honestly, neo4j supports array of typed arrays and so on, but somewhy neo4j node.js lib does not_
+
+so, query mechanism is inspired by MongoDB (Mongo is bad, mkay, but query mechanism is quite good), and query is looking like:
+```typescript
+Record.where(
+    {
+        someString: 'hello', //just place the value
+        someNumber: 25, 
+        someBool: true,
+        someArray: [1,2,3], //arrays matching actually works!
+        otherString: {$startsWith: 'foo', $endsWith: 'bar', $contains: 'baz'}, //use one or all of them 
+        otherNumber: {$gt: 10, $gte: 25, $lte: 25, $lt: 50},
+        //important: $has and $contains are acting differently 
+        //$has is comparing over array and $contains - over string
+        otherArray: {$has: 5},
+        //$in is checking value in passed array. Array should be typed! [1, 'hello'] will not work.
+        otherValue: {$exists: true, $in: [1,2,3]},         
+    },
+)
+```
 
 ## Relations
 Yes, there are fully-featured relations, see API.
@@ -153,8 +180,7 @@ Just use your imagination. It's just common ES6 class which is getting dumped to
 - [x] has
 - [x] deep relations
 - [x] indexes
-- [ ] rich Record.where query syntax ($lt, $gt, $lte, $gte, $has, $in and so on)
+- [x] rich Record.where query syntax ($lt, $gt, $lte, $gte, $has, $in and so on)
 - [ ] total test coverage
 - [ ] performance optimisations
-- [ ] optimistic lock
-- [ ] pessimistic lock
+- [ ] optimistic and pessimistic locks?
