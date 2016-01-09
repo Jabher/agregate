@@ -192,7 +192,6 @@ Just use your imagination. It's just common ES6 class which is getting dumped to
 - [x] deep relations
 - [x] indexes
 - [x] rich Record.where query syntax ($lt, $gt, $lte, $gte, $has, $in and so on)
-- [ ] declarative validations
 - [ ] one-to-one relations
 - [ ] total test coverage
 - [ ] performance optimisations
