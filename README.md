@@ -27,10 +27,21 @@ Finally, there are only 2 drawbacks:
 ## Usage example
 
 ```javascript
-import {Record, connect} from 'active-graph-record'
-connect('http://neo4j:neo4j@localhost:7474')
+import {Record, GraphConnection} from 'active-graph-record'
+
 
 class User extends Record {
+    static connection = new GraphConnection('http://neo4j:password@localhost:7474')
+    debug () {console.log({...this})}
+}
+
+//or with inheritance
+
+class ConnectedRecord extends Record {
+    static connection = new GraphConnection('http://neo4j:password@localhost:7474')
+}
+
+class User extends ConnectedRecord {
     debug () {console.log({...this})}
 }
 
@@ -181,6 +192,7 @@ Just use your imagination. It's just common ES6 class which is getting dumped to
 - [x] deep relations
 - [x] indexes
 - [x] rich Record.where query syntax ($lt, $gt, $lte, $gte, $has, $in and so on)
+- [ ] one-to-one relations
 - [ ] total test coverage
 - [ ] performance optimisations
 - [ ] optimistic and pessimistic locks?
