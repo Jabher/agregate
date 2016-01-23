@@ -112,15 +112,20 @@ Just think about relation as about async Set as interface is nearly same (except
 
 ```typescript
 var RecordSet = Array<Record> | Promise<Record | Array<Record>>  
+var RecordArgs = RecordSet | ...RecordSet
 
 export class Relation {
     constructor(sourceNode: Record | Relation, relationLabel: string, {target?: Record, direction: [-1,0,1]})
     async size(): number
-    async has(records: RecordSet | ...records: RecordSet): boolean
-    async intersect(records: RecordSet | ...records: RecordSet): Array<Records>
-    async add(records: RecordSet | ...records: RecordSet): void
-    async delete(records: RecordSet | ...records: RecordSet): void
+    async has(RecordArgs): boolean
+    async intersect(RecordArgs): Array<Records>
+    async add(RecordArgs): void
+    async delete(RecordArgs): void
     async entries(properies?: Object, type?: string): Array<Record>
+
+    async only(): Record | null
+    async only(Null): void
+    async only(RecordArgs): void
 }
 ```
 
@@ -192,7 +197,8 @@ Just use your imagination. It's just common ES6 class which is getting dumped to
 - [x] deep relations
 - [x] indexes
 - [x] rich Record.where query syntax ($lt, $gt, $lte, $gte, $has, $in and so on)
-- [ ] one-to-one relations
+- [ ] relations validation
+- [x] one-to-one relations
 - [ ] total test coverage
 - [ ] performance optimisations
 - [ ] optimistic and pessimistic locks?

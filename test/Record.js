@@ -11,7 +11,8 @@ class Record extends RefRecord {
 const query = connection.query.bind(connection)
 
 describe('ActiveRecord', () => {
-    class Test extends Record {}
+    class Test extends Record {
+    }
     beforeEach(async () =>
         await query(Cypher.tag`MATCH (n) DETACH DELETE n`))
     beforeEach(async () =>
@@ -140,7 +141,8 @@ describe('ActiveRecord', () => {
             class TestIntermediateObject extends Record {
                 endObjects = new Relation(this, 'rel2', {target: TestEndObject})
             }
-            class TestEndObject extends Record {}
+            class TestEndObject extends Record {
+            }
 
             let startObject
             let midObject
@@ -188,6 +190,19 @@ describe('ActiveRecord', () => {
                     expect(await startObject.endObjects.size()).to.equal(0)
                 })
             })
+        })
+        describe('one-to-one', () => {
+            beforeEach(async () =>
+                await object.subjects.only(subject))
+
+            it('should have a relation', async () =>
+                expect(await object.subjects.entries()).to.have.length(1))
+            it('should remove a relation', async () => {
+                await object.subjects.only(null)
+                expect(await object.subjects.entries()).to.have.length(0)
+            })
+            it('should resolve a relation', async () =>
+                expect(await object.subjects.only()).to.deep.include({uuid: subject.uuid}))
         })
     })
     describe('self-relations', () => {
@@ -308,7 +323,7 @@ describe('ActiveRecord', () => {
 
         it('should support transactions', async () => {
             const beforeQuery = new Promise((resolve, reject) =>
-                testRecord.beforeCreate = async function(query) {
+                testRecord.beforeCreate = async function (query) {
                     try {
                         expect(this.state).to.equal(1)
                         this.state = 2
@@ -324,7 +339,7 @@ describe('ActiveRecord', () => {
                     }
                 })
             const afterQuery = new Promise((resolve, reject) =>
-                testRecord.afterCreate = async function(query) {
+                testRecord.afterCreate = async function (query) {
                     try {
                         expect(this.state).to.equal(2)
                         Object.defineProperty(this, 'connection', {value: {query}, configurable: true})
@@ -388,15 +403,15 @@ describe('ActiveRecord', () => {
         })
         describe('arrays', () => {
             beforeEach(async () => await Test.save(
-                {test: [1,2,3,4,5], test2: 1},
-                {test: [6,7,8,9,0], test2: 2}))
+                {test: [1, 2, 3, 4, 5], test2: 1},
+                {test: [6, 7, 8, 9, 0], test2: 2}))
 
 
             it('should support $has', async () =>
                 expect(await Test.where({test: {$has: 1}})).to.have.length(1)
                     .and.to.have.deep.property(`[0].test2`, 1))
             it('should support $in', async () =>
-                expect(await Test.where({test2: {$in: [1,1,1,5,5]}})).to.have.length(1)
+                expect(await Test.where({test2: {$in: [1, 1, 1, 5, 5]}})).to.have.length(1)
                     .and.to.have.deep.property(`[0].test2`, 1))
         })
     })
