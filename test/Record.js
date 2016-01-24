@@ -27,10 +27,10 @@ describe('ActiveRecord', () => {
         it('should create new record', async () =>
             expect(await Test.byUuid(instance.uuid))
                 .to.deep.include(opts))
-        it('should create new record by Record#createOrUpdate', async () =>
+        it('should create new record by Record#firstOrInitialize', async () =>
             expect(await Test.firstOrInitialize(opts))
                 .to.deep.include(opts))
-        it('should return existing record if exists by Record#createOrUpdate', async () =>
+        it('should return existing record if exists by Record#firstOrInitialize', async () =>
             expect(await Test.firstOrInitialize(opts))
                 .to.deep.include({uuid: instance.uuid}))
         it('should destroy existing record', async () => {
