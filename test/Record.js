@@ -378,12 +378,22 @@ describe('ActiveRecord', () => {
                 expect(await Test.where({test: {$gte: 2}}, {order: 'test'})).to.have.length(2)
                     .and.to.have.deep.property(`[0].test`, 2))
 
+            it('should support multiple $lt', async () =>
+                expect(await Test.where({test: {$lt: [2, 3]}}), {order: 'test'}).to.have.length(1)
+                    .and.to.have.deep.property(`[0].test`, 1))
+            it('should support multiple $lte', async () =>
+                expect(await Test.where({test: {$lte: [2, 3]}}, {order: 'test'})).to.have.length(2)
+                    .and.to.have.deep.property(`[1].test`, 2))
+            it('should support multiple $gt', async () =>
+                expect(await Test.where({test: {$gt: [2, 1]}}), {order: 'test'}).to.have.length(1)
+                    .and.to.have.deep.property(`[0].test`, 3))
+            it('should support multiple $gte', async () =>
+                expect(await Test.where({test: {$gte: [2, 1]}}, {order: 'test'})).to.have.length(2)
+                    .and.to.have.deep.property(`[0].test`, 2))
+
         })
         describe('strings', () => {
             beforeEach(() => Test.save({test: 'abcde'}, {test: 'ecdba'}, {test: 'foo'}))
-            it('should support $startsWith', async () =>
-                expect(await Test.where({test: {$startsWith: 'abc'}})).to.have.length(1)
-                    .and.to.have.deep.property(`[0].test`, 'abcde'))
             it('should support $startsWith', async () =>
                 expect(await Test.where({test: {$startsWith: 'abc'}})).to.have.length(1)
                     .and.to.have.deep.property(`[0].test`, 'abcde'))
@@ -392,6 +402,15 @@ describe('ActiveRecord', () => {
                     .and.to.have.deep.property(`[0].test`, 'abcde'))
             it('should support $contains', async () =>
                 expect(await Test.where({test: {$contains: 'a'}})).to.have.length(2))
+
+            it('should support multiple $startsWith', async () =>
+                expect(await Test.where({test: {$startsWith: ['abc', 'ab']}})).to.have.length(1)
+                    .and.to.have.deep.property(`[0].test`, 'abcde'))
+            it('should support multiple $endsWith', async () =>
+                expect(await Test.where({test: {$endsWith: ['cde', 'de']}})).to.have.length(1)
+                    .and.to.have.deep.property(`[0].test`, 'abcde'))
+            it('should support multiple $contains', async () =>
+                expect(await Test.where({test: {$contains: ['a', 'b']}})).to.have.length(2))
         })
         describe('general', () => {
             beforeEach(() => Test.save({test: true}, {test: false}, {test2: 'test2'}))
@@ -410,8 +429,14 @@ describe('ActiveRecord', () => {
             it('should support $has', async () =>
                 expect(await Test.where({test: {$has: 1}})).to.have.length(1)
                     .and.to.have.deep.property(`[0].test2`, 1))
+            it('should support multiple $has', async () =>
+                expect(await Test.where({test: {$has: [1, 2]}})).to.have.length(1)
+                    .and.to.have.deep.property(`[0].test2`, 1))
             it('should support $in', async () =>
                 expect(await Test.where({test2: {$in: [1, 1, 1, 5, 5]}})).to.have.length(1)
+                    .and.to.have.deep.property(`[0].test2`, 1))
+            it('should support multiple $in', async () =>
+                expect(await Test.where({test2: {$in: [[1, 1, 1, 5, 5], [1, 2, 2, 4, 4]]}})).to.have.length(1)
                     .and.to.have.deep.property(`[0].test2`, 1))
         })
     })
