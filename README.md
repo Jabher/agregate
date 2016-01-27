@@ -65,7 +65,8 @@ Created_at and updated_at can be used for sorting purposes.
 export class Record {
     static indexes: Enumerable<String>
     static label: string //class name by default; can be overriden
-    static register(): void   
+    static register(): void
+    static byUuid(UUIDString): Record //just wrapper over #where, though useful
     static async where(properties?: Object, options?: {offset?: number, limit?: number, order: string | Array<string>}): Array<Record> 
     
     [property: string]: boolean | number | string | Relation
@@ -163,19 +164,31 @@ class SourceObject extends Record {
 There are 6 hooks: before and after create, update and delete. Fully hooked record class will look like this:
 
 ```typescript
-interface QueryRunner {
-    (cypher: Cypher): Promise<any>
-    (...cyphers: Array<Cypher>): Promise<any>
-}
 
-class User extends Record {
-    async beforeCreate(query: QueryRunner) { await query(Cypher.tag`something...`) }
-    async afterCreate(query: QueryRunner) { await query(Cypher.tag`something...`) }
-    async beforeUpdate(query: QueryRunner) { await query(Cypher.tag`something...`) }
-    async afterUpdate(query: QueryRunner) { await query(Cypher.tag`something...`) }
-    async before(query: QueryRunner) { await query(Cypher.tag`something...`) }
+class extends Record {
+    async beforeCreate(transaction: SubTransaction) {}
+    async afterCreate(transaction: SubTransaction) {}
+    async beforeUpdate(transaction: SubTransaction) {}
+    async afterUpdate(transaction: SubTransaction) {}
+    async before(transaction: SubTransaction) {}
 }
 ```
+
+### Hooks atomicity
+
+transaction is a very special argument passed into the hook.
+You can use it for any purpose you need. Moreover, without it query will simply not execute as far as everyhing is single-threaded in neo4j.
+Just place it inside any async operation as a last argument, e.g.
+```
+class extends Record {
+    async afterCreate(transaction: SubTransaction) {
+        const socialConnection = await new SocialConnection({facebook_id: this.facebook_id}).save(transaction)
+        await socialConnection.users.add(this, transaction)
+    }
+}
+```
+
+You should explicitly use transaction for purposes of atomicity due to node's fiber-ish nature and asyncroniocity.
 
 ##FAQ
 #### How to extend something?
@@ -202,3 +215,4 @@ Just use your imagination. It's just common ES6 class which is getting dumped to
 - [ ] total test coverage
 - [ ] performance optimisations
 - [ ] optimistic and pessimistic locks?
+- [ ] tests for transaction usage
