@@ -32,7 +32,8 @@
     "mocha": "^2.3.4"
   },
   "dependencies": {
-    "babel-polyfill": "^6.3.14",
+    "babel-regenerator-runtime": "^6.3.13",
+    "core-js": "^2.0.3",
     "cypher-talker": "^0.5.0",
     "debug": "^2.2.0",
     "neo4j": "^2.0.0-RC2",
