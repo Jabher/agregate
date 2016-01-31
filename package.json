@@ -1,6 +1,6 @@
 {
   "name": "active-graph-record",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "description": "Schema-less ActiveRecord over neo4j",
   "main": "build/index.js",
   "repository": "jabher/ActiveGraphRecord",
