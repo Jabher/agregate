@@ -11,8 +11,7 @@ class Record extends RefRecord {
 const query = connection.query.bind(connection)
 
 describe('ActiveRecord', () => {
-    class Test extends Record {
-    }
+    class Test extends Record {}
     beforeEach(async() =>
         await query(Cypher.tag`MATCH (n) DETACH DELETE n`))
     beforeEach(async() =>
@@ -485,6 +484,27 @@ describe('ActiveRecord', () => {
             it('should support multiple $in', async() =>
                 expect(await Test.where({test2: {$in: [[1, 1, 1, 5, 5], [1, 2, 2, 4, 4]]}})).to.have.length(1)
                     .and.to.have.deep.property(`[0].test2`, 1))
+        })
+    })
+
+    describe.only('events', () => {
+        it('should receive created event', (done) => {
+            Test.on('created', (record) => {
+                expect(record)
+                    .to.deep.include({val: 1})
+                done()
+                done = () => {}
+            })
+            new Test({val: 1}).save()
+        })
+        it('should receive updated event', (done) => {
+            Test.on('updated', (record) => {
+                expect(record)
+                    .to.deep.include({val: 2})
+                done()
+                done = () => {}
+            })
+            new Test({val: 1}).save().then(entry => entry.save({val: 2}))
         })
     })
 })
