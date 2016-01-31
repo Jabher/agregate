@@ -487,7 +487,7 @@ describe('ActiveRecord', () => {
         })
     })
 
-    describe.only('events', () => {
+    describe('events', () => {
         it('should receive created event', (done) => {
             Test.on('created', (record) => {
                 expect(record)
