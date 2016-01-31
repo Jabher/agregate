@@ -58,11 +58,13 @@ async function main () {
 
 UUIDv4 is used instead of primary key. But you can ignore it (unless you're trying to hack the lib)
 Created_at and updated_at can be used for sorting purposes.
- 
+
 ## API
 
 ```typescript
 export class Record {
+    on(), emit() - personal eventEmitter with 'created' and 'updated' events pre-installed
+
     static indexes: Enumerable<String>
     static label: string //class name by default; can be overriden
     static register(): void
@@ -215,4 +217,5 @@ Just use your imagination. It's just common ES6 class which is getting dumped to
 - [ ] total test coverage
 - [ ] performance optimisations
 - [ ] optimistic and pessimistic locks?
-- [ ] tests for transaction usage
+- [x] tests for transaction usage
+- [ ] tests for eventEmitter
