@@ -3,7 +3,7 @@
   "version": "0.14.4",
   "description": "Schema-less ActiveRecord over neo4j",
   "main": "build/index.js",
-  "repository": "jabher/ActiveGraphRecord",
+  "repository": "jabher/active-graph-record",
   "scripts": {
     "test": "mocha --compilers js:babel-register --require ./test/globals/lib",
     "test-against-build": "mocha --bail --reporter nyan --require ./test/globals/build",
