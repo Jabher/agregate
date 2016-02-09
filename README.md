@@ -15,6 +15,12 @@ Dead simple. It's mostly purposed for ES2015-featured JavaScript, so all of the 
 ```javascript
 const {Connection, Record} = require('active-graph-record')
 
+class Entry extends Record {}
+Entry.connection = new Connection('http://neo4j:password@localhost:7474');
+
+// or with babel-preset-stage-1
+// here and further where static properties are used they can be simply replaced by simple assignment
+
 class Entry extends Record {
     static connection = new Connection('http://neo4j:password@localhost:7474');
 }
@@ -44,6 +50,12 @@ class ConnectedRecord extends Record {
 
 class RecordObject extends ConnectedRecord {
     subjects = new Relation(this, 'relation' /*internal relation label-name*/);
+
+    //note: it is NOT a static property. It can be replaced with
+    constructor(...args){
+        super(...args);
+        this.subjects = new Relation(this, 'relation' /*internal relation label-name*/);
+    }
 }
 
 class RecordSubject extends ConnectedRecord {
