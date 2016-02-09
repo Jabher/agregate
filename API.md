@@ -129,3 +129,8 @@ interface Relation {
 
 ## acceptsTransaction
 decorator / decorator factory purposed to wrap methods in order they can accept a transaction as a last argument.
+
+```javascript
+function acceptsTransaction(props?: {force?: bool}): acceptsTransaction
+function acceptsTransaction(target, name, descriptor)
+```

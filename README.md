@@ -87,11 +87,67 @@ class Permission extends ConnectedRecord {
     users = new Relation(this.roles, 'has_role', {target: User, direction: -1});
 }
 ```
+## Automatic fields
+
+AGR automatically brings **uuid** key (cannot be re-defined), **created_at** and **updated_at** fields when record is reflected
+
 ## OK, but how can I make complex queries?
 
-Record and Relation have static __where__ method to use for querying.
+Record and Relation have static **where** method to use for querying.
 All details are provided in API page, in brief - order, limit, offset can be used for filtering,
 equality, existence, numeric (greater/less), string (starts/ends with, contains), array (contains/includes) queries are available
+
+Examples:
+```javascript
+Entry.where({foo: 1000}, {limit: 10, offset: 10, order: 'created_at'})
+Entry.where({updated_at: {$gte: Date.now() - 1000}}, {order: ['created_at DESC']})
+Entry.where({foo: {$exists: true, $startsWith: ['b', 'ba', 'baz'], $endsWith: 'bar', $contains: 'z'}})
+
+// here e.g. {foo: [1,2,3,4,5], bar: 3} will be reflected.
+// $has stands for "db record has fields", $in - for "db record is in list of possible fields"
+Entry.where({foo: {$has: [1,2,3]}, bar: {$in: [1,2,3]}})
+
+//$in can also work with array
+Entry.where({foo: {$in: [[0], [1,2,3,4,5]]}}})
+```
+
+## Hooks?
+
+Sure. beforeCreate, afterCreate, beforeUpdate, afterUpdate, beforeDestroy, afterDestroy are available hooks
+
+```javascript
+class Entry extends Record {
+    async beforeCreate() {
+        //this.connection points here to transaction, so you have to pass it if calling other classes
+        const test = await Test.where({id: this.id}, this.connection)
+        this.testId = test.testId
+    }
+}
+```
+
+## Transactions and atomicity?
+
+AGR provides simple transactions engine.
+Hooks (see above) are always inside a transaction.
+They can be used by using special decorator **@acceptsTransaction({force: true})** or called explicitly by connection.transaction()
+All transactions should be committed or rolled back.
+On **SIGINT** AGR will attempt to rollback all not closed yet transactions.
+
+Good example is Record#firstOrCreate sugar-ish method:
+
+```javascript
+class Record {
+    @acceptsTransaction
+    static async firstOrInitialize(params) {
+        const tx = this.connection.transaction()
+        let [result] = await this.where(params, {limit: 1}, tx.transaction())
+        if (!result)
+            result = await new this().save(params, tx.transaction())
+        await tx.commit()
+        return result
+    }
+}
+```
 
 ## Roadmap
 - [x] sort
