@@ -18,7 +18,7 @@ Well, it's JS so you can override everything, but those properties are intended 
 - 'static' keyword means (if you do not know) that it is class property
 
 - internal interfaces and classes used for declaration are:
-```
+```javascript
 var primitiveType = bool | string | number
 var dbPrimitiveType = primitiveType | Array<primitiveType>
 
@@ -54,7 +54,7 @@ API is totally same to node's EventEmitter, it's just wrapper
 
 ## Connection, Transaction and SubTransaction
 they all implements Queryable class and have following user API:
-```typescript
+```javascript
 interface Queryable {
     transaction(): Queryable; //Connection creates Transaction, Transaction creates SubTransaction
 
@@ -70,7 +70,7 @@ interface Queryable {
 ```
 
 ## Record
-```typescript
+```javascript
 interface Record extends Evented {
     static async register(): void; //needs to be called for resolving purposes
 
@@ -107,7 +107,7 @@ interface Record extends Evented {
 ```
 
 ## Relation
-```typescript
+```javascript
 interface Relation {
     constructor(Record | Relation, label, opts?: {target?: Record, direction?: number = 1})
 
