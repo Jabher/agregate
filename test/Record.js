@@ -3,17 +3,19 @@ import chai, {expect} from 'chai'
 chai.use(require('chai-spies'))
 import {Cypher} from 'cypher-talker'
 
-const {Record: RefRecord, GraphConnection, Relation} = global
-const connection = new GraphConnection('http://neo4j:password@localhost:7474')
+const {Record: RefRecord, Relation} = global
+const connection = new global.Connection('http://neo4j:password@localhost:7474')
+
 class Record extends RefRecord {
-    static connection = connection
+    static async save(...props) { return await Promise.all(props.map(opts => new this(opts).save())) }
+
+    static connection = connection;
 }
-const query = connection.query.bind(connection)
 
 describe('ActiveRecord', () => {
     class Test extends Record {}
     beforeEach(async() =>
-        await query(Cypher.tag`MATCH (n) DETACH DELETE n`))
+        await connection.query(Cypher.tag`MATCH (n) DETACH DELETE n`))
     beforeEach(async() =>
         await Test.register())
 
@@ -62,11 +64,11 @@ describe('ActiveRecord', () => {
 
     describe('relations', () => {
         class TestObject extends Record {
-            subjects = new Relation(this, 'relation')
+            subjects = new Relation(this, 'relation');
         }
         class TestSubject extends Record {
-            subjects = new Relation(this, 'relation')
-            objects = new Relation(this, 'relation', {direction: -1})
+            subjects = new Relation(this, 'relation');
+            objects = new Relation(this, 'relation', {direction: -1});
         }
         let object
         let subject
@@ -181,11 +183,11 @@ describe('ActiveRecord', () => {
 
         describe('deep', () => {
             class TestSourceObject extends Record {
-                intermediateObjects = new Relation(this, 'rel1', {target: TestIntermediateObject})
-                endObjects = new Relation(this.intermediateObjects, 'rel2', {target: TestEndObject})
+                intermediateObjects = new Relation(this, 'rel1', {target: TestIntermediateObject});
+                endObjects = new Relation(this.intermediateObjects, 'rel2', {target: TestEndObject});
             }
             class TestIntermediateObject extends Record {
-                endObjects = new Relation(this, 'rel2', {target: TestEndObject})
+                endObjects = new Relation(this, 'rel2', {target: TestEndObject});
             }
             class TestEndObject extends Record {
             }
@@ -253,7 +255,7 @@ describe('ActiveRecord', () => {
     })
     describe('self-relations', () => {
         class TestSelfObject extends Record {
-            subjects = new Relation(this, 'ref')
+            subjects = new Relation(this, 'ref');
         }
         let object1
         let object2
@@ -312,7 +314,9 @@ describe('ActiveRecord', () => {
         it('should reveal item by string prop', async() =>
             expect(await Test.where({test})).to.have.length(items.length))
         it('should reveal item by int prop', async() =>
-            expect(await Test.where({idx: items[0].idx})).to.deep.include(items[0]))
+            expect(await Test.where({idx: items[0].idx}))
+                .to.have.deep.property('[0]')
+                .that.deep.includes(items[0]))
         it('should support offset', async() => {
             const limit = 2
             const result = await Test.where({test}, {limit: 2, order: 'idx ASC'})
@@ -367,43 +371,26 @@ describe('ActiveRecord', () => {
             expect(testRecord[afterHookName], 'after hook').to.be.called.once()
         })
 
-        it('should support transactions', async() => {
-            const beforeQuery = new Promise((resolve, reject) =>
-                testRecord.beforeCreate = async function (transaction) {
-                    try {
-                        expect(this.state).to.equal(1)
-                        this.state = 2
-                        Object.defineProperty(this, 'connection', {value: transaction, configurable: true})
-                        expect(await Test.where({state: 1})).to.have.length(0)
-                        expect(await Test.where({state: 2})).to.have.length(0)
-                        resolve()
-                    } catch (e) {
-                        reject(e)
-                        throw e
-                    } finally {
-                        delete this.connection
-                    }
-                })
-            const afterQuery = new Promise((resolve, reject) =>
-                testRecord.afterCreate = async function (transaction) {
-                    try {
-                        expect(this.state).to.equal(2)
-                        Object.defineProperty(this, 'connection', {value: transaction, configurable: true})
-                        expect(await Test.where({state: 1})).to.have.length(0)
-                        expect(await Test.where({state: 2})).to.have.length(0)
-                        resolve()
-                    } catch (e) {
-                        reject(e)
-                        throw e
-                    } finally {
-                        delete this.connection
-                    }
-                })
-            // important - no async keyword!
-            testRecord.save({state: 1})
-            await beforeQuery
-            await afterQuery
+        it('should support transactions', async () => {
+            Object.assign(testRecord, {
+                async beforeCreate() {
+                    expect(await Test.where({state: 1}, this.connection)).to.have.length(0)
+                },
+                async afterCreate() {
+                    expect(await Test.where({state: 1}, this.connection)).to.have.length(1)
+                },
+                state: 1
+            })
             expect(await Test.where({state: 1})).to.have.length(0)
+            await testRecord.save()
+            expect(await Test.where({state: 1})).to.have.length(1)
+        })
+        it('should be affected by modifications in before hook', async () => {
+            Object.assign(testRecord, {
+                async beforeCreate() { this.state = 2 },
+                state: 1
+            })
+            await testRecord.save()
             expect(await Test.where({state: 2})).to.have.length(1)
         })
     })
@@ -488,23 +475,40 @@ describe('ActiveRecord', () => {
     })
 
     describe('events', () => {
-        it('should receive created event', (done) => {
-            Test.on('created', (record) => {
+        it('should receive created event', async(done) => {
+            Test.once('created', (record) => {
                 expect(record)
                     .to.deep.include({val: 1})
                 done()
                 done = () => {}
             })
-            new Test({val: 1}).save()
+            await new Test({val: 1}).save()
         })
-        it('should receive updated event', (done) => {
-            Test.on('updated', (record) => {
+        it('should receive updated event', async(done) => {
+            Test.once('updated', (record) => {
                 expect(record)
                     .to.deep.include({val: 2})
                 done()
                 done = () => {}
             })
-            new Test({val: 1}).save().then(entry => entry.save({val: 2}))
+            const entry = await new Test({val: 1}).save()
+            await Object.assign(entry, {val: 2}).save()
+        })
+    })
+    describe('concurrent transaction calls', () => {
+        let tx
+        beforeEach(() => {
+            tx = connection.transaction()
+        })
+        afterEach(async () => {
+            tx.commit()
+        })
+        it('should not crash', async () => {
+            await Promise.all([
+                Test.where(tx),
+                Test.where(tx),
+                Test.where(tx)
+            ])
         })
     })
 })

@@ -1,2 +1,2 @@
-import {Record, GraphConnection, Relation} from '../../lib/index'
-Object.assign(global, {Record, GraphConnection, Relation})
+import {Record, Connection, Relation} from '../../lib/index'
+Object.assign(global, {Record, Connection, Relation})

@@ -1,209 +1,97 @@
-# ActiveRecord es6/7-oriented implementation over neo4j
-_this software is alpha stage and is not supposed to be used in production_
+# ActiveRecord implementation for ES2015 with neo4j as back-end
+_this software is beta stage and is not intended to be used in serous production projects_
+_developers of this software are not responsible for data loss and corruption, lunar eclipses and dead kittens_
+
 ## What is it?
 
-ActiveRecord is common pattern that is, speaking in general
+ActiveRecord is common pattern in software development which declares that there is special class or classes who are
+responsible for database reflection, line-by-line or node-by-node.
 
-1. I hate schemas. 
-No, I do not have something personal against them, but actual schema usages are not totally DRY and can cause an error. 
-There is type declarations in language and framework, in migrations and in database.
-Every SQL lib tries to implement their own scenario of handling difference between application schema and DB schema.
-Only "good" solutions are tight integration with DB (tight is bad by default, except some cases) and some CLIs (which requires framework-alike structure)
+Neo4j is Graph Database, it's schema-less and ACID-compliant.
 
-2. There is no good ActiveRecord implementation in JS.
-There are Waterline and Sequelize which are nice, but not, emm... ActiveRecord-ish.
-I love node.js but since I came from Rails I was just expecting for something as good in terms of ORM/ODM as Rails's ActiveRecord.
+## How to use it?
 
-3. Because I can.
-
-## About the solution
-
-The target that was expected to be accomplished is to implement schema-less class-based models for DB reflection.
- 
-Finally, there are only 2 drawbacks:
-1. you need to register any created class.
-2. relations are async.
-
-## Usage example
-
+Dead simple. It's mostly purposed for ES2015-featured JavaScript, so all of the examples are written using it.
 ```javascript
-import {Record, GraphConnection} from 'active-graph-record'
+const {Connection, Record} = require('active-graph-record')
 
-
-class User extends Record {
-    static connection = new GraphConnection('http://neo4j:password@localhost:7474')
-    debug () {console.log({...this})}
+class Entry extends Record {
+    static connection = new Connection('http://neo4j:password@localhost:7474');
 }
 
-//or with inheritance
+Entry.register() //creates indexes and makes some internal magic for resolving
 
+async function main() {
+    const entry = new Entry()
+    entry.foo = 'bar'
+    await entry.save()
+
+    const entries = await Entry.where({foo: 'bar'})
+    console.log(entries.length) // => 1
+    console.log(entries[0].foo) // => 'bar'
+}
+```
+
+## Wait, but I need relations
+
+no problems. It's dead simple too:
+
+```javascript
+const {Connection, Record, Relation} = require('active-graph-record')
 class ConnectedRecord extends Record {
-    static connection = new GraphConnection('http://neo4j:password@localhost:7474')
+    static connection = new Connection('http://neo4j:password@localhost:7474');
 }
 
+class RecordObject extends ConnectedRecord {
+    subjects = new Relation(this, 'relation' /*internal relation label-name*/);
+}
+
+class RecordSubject extends ConnectedRecord {
+    //target is optional! and direction is optional too, it should be -1 for reverse relations.
+    subjects = new Relation(this, 'relation', {target: Object, direction: -1});
+}
+
+RecordObject.register()
+RecordSubject.register()
+
+async function main() {
+    const object = await new RecordObject({baz: true}).save()
+    const subject = await new RecordSubject().save()
+    await object.subjects.add(subject)
+
+    console.log(await subject.objects.size()) // => 1
+    const objects = await subject.objects.entries()
+    console.log(objects[0].baz) => //true
+}
+```
+
+even for deep relations:
+
+```javascript
 class User extends ConnectedRecord {
-    debug () {console.log({...this})}
-}
+    roles = new Relation(this, 'has_role', {target: Role});
+    permissions = new Relation(this.roles, 'has_permission', {target: Permission});
 
-User.register()
-
-async function main () {
-    const user = new User({first_name: 'John'})
-    user.last_name = 'Doe'
-    await user.save()
-    const [resolvedUser] = await User.where({first_name: 'Jonh'})
-    resolvedUser.debug() // => {first_name: 'John', last_name: 'Doe', uuid: '###', created_at: ###, updated_at: ###}
-}
-```
-
-UUIDv4 is used instead of primary key. But you can ignore it (unless you're trying to hack the lib)
-Created_at and updated_at can be used for sorting purposes.
-
-## API
-
-```typescript
-export class Record {
-    on(), emit() - personal eventEmitter with 'created' and 'updated' events pre-installed
-
-    static indexes: Enumerable<String>
-    static label: string //class name by default; can be overriden
-    static register(): void
-    static byUuid(UUIDString): Record //just wrapper over #where, though useful
-    static async where(properties?: Object, options?: {offset?: number, limit?: number, order: string | Array<string>}): Array<Record> 
-    
-    [property: string]: boolean | number | string | Relation
-    
-    constructor (properties?: Object)
-    
-    async save(properties?: Object): void 
-    async delete(): void     
-}
-```
-
-## Querying
-
-First of all, we need to keep in mind types in neo4j. They are:
-- string
-- number
-- boolean
-- typed array of any of types above
-_disclaimer: speaking honestly, neo4j supports array of typed arrays and so on, but somewhy neo4j node.js lib does not_
-
-so, query mechanism is inspired by MongoDB (Mongo is bad, mkay, but query mechanism is quite good), and query is looking like:
-```typescript
-Record.where(
-    {
-        someString: 'hello', //just place the value
-        someNumber: 25, 
-        someBool: true,
-        someArray: [1,2,3], //arrays matching actually works!
-        otherString: {$startsWith: 'foo', $endsWith: 'bar', $contains: 'baz'}, //use one or all of them 
-        otherNumber: {$gt: 10, $gte: 25, $lte: 25, $lt: 50},
-        //important: $has and $contains are acting differently 
-        //$has is comparing over array and $contains - over string
-        otherArray: {$has: 5},
-        //$in is checking value in passed array. Array should be typed! [1, 'hello'] will not work.
-        otherValue: {$exists: true, $in: [1,2,3]},         
-    },
-)
-```
-
-## Relations
-Yes, there are fully-featured relations, see API.
-All of the relations are non-directed polymorphic many-to-many, but actually you can not care about that.
-Just think about relation as about async Set as interface is nearly same (except properties for Relation#entries).
-
-```typescript
-var RecordSet = Array<Record> | Promise<Record | Array<Record>>  
-var RecordArgs = RecordSet | ...RecordSet
-
-export class Relation {
-    constructor(sourceNode: Record | Relation, relationLabel: string, {target?: Record, direction: [-1,0,1]})
-    async size(): number
-    async has(RecordArgs): boolean
-    async intersect(RecordArgs): Array<Records>
-    async add(RecordArgs): void
-    async delete(RecordArgs): void
-    async entries(properies?: Object, type?: string): Array<Record>
-
-    async only(): Record | null
-    async only(Null): void
-    async only(RecordArgs): void
-}
-```
-
-If you need both direct and back relation, use same label:
-```javascript
-class ExampleObject extends Record {
-    get subjects() { return this.getRelation('relation') }
-}
-ExampleObject.register()
-class ExampleSubject extends Record {
-    get objects() { return this.getRelation('relation') }
-}
-ExampleSubject.register()
-```
-
-Deep relations? No problem. Of course, you cannot add elements there 
-(as far as it's unknown to which intermediate node to connect them)
-but you can do everything else.
-
-```javascript
-class SourceObject extends Record {
-    constructor(...args) {
-        super(...args)
-        const intermediateRelation = new Relation(this, 'rel1', {target: IntermediateObject})
-        this.defineRelations({
-            intermediateObjects: intermediateRelation,
-            endObjects: new Relation(intermediateRelation, 'rel2', {target: EndObject})
-        })
+    async hasPermission(permission) {
+        return await this.permissions.has(permission)
     }
 }
-```
 
-## Hooks
+class Role extends ConnectedRecord {
+    users = new Relation(this, 'has_role', {target: Role, direction: -1});
+    permissions = new Relation(this, 'has_permission', {target: Permission});
+}
 
-There are 6 hooks: before and after create, update and delete. Fully hooked record class will look like this:
-
-```typescript
-
-class extends Record {
-    async beforeCreate(transaction: SubTransaction) {}
-    async afterCreate(transaction: SubTransaction) {}
-    async beforeUpdate(transaction: SubTransaction) {}
-    async afterUpdate(transaction: SubTransaction) {}
-    async before(transaction: SubTransaction) {}
+class Permission extends ConnectedRecord {
+    roles = new Relation(this, 'has_permission', {target: Role, direction: -1});
+    users = new Relation(this.roles, 'has_role', {target: User, direction: -1});
 }
 ```
+## OK, but how can I make complex queries?
 
-### Hooks atomicity
-
-transaction is a very special argument passed into the hook.
-You can use it for any purpose you need. Moreover, without it query will simply not execute as far as everyhing is single-threaded in neo4j.
-Just place it inside any async operation as a last argument, e.g.
-```
-class extends Record {
-    async afterCreate(transaction: SubTransaction) {
-        const socialConnection = await new SocialConnection({facebook_id: this.facebook_id}).save(transaction)
-        await socialConnection.users.add(this, transaction)
-    }
-}
-```
-
-You should explicitly use transaction for purposes of atomicity due to node's fiber-ish nature and asyncroniocity.
-
-##FAQ
-#### How to extend something?
-create class methods
-
-#### How to save dates?
-
-
-#### How to validate?
-create getter and setter and validate there. Or create decorator (when @sebmck will bring their support back to babel).
-
-#### How to...
-Just use your imagination. It's just common ES6 class which is getting dumped to db from `{...this}` - taking only enumerable props.
+Record and Relation have static __where__ method to use for querying.
+All details are provided in API page, in brief - order, limit, offset can be used for filtering,
+equality, existence, numeric (greater/less), string (starts/ends with, contains), array (contains/includes) queries are available
 
 ## Roadmap
 - [x] sort
