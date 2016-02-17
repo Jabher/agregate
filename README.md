@@ -19,7 +19,8 @@ class Entry extends Record {}
 Entry.connection = new Connection('http://neo4j:password@localhost:7474');
 
 // or with babel-preset-stage-1
-// here and further where static properties are used they can be simply replaced by simple assignment
+// here and further where static properties are used they can be replaced
+// by assignment of property to class function, like shown above
 
 class Entry extends Record {
     static connection = new Connection('http://neo4j:password@localhost:7474');
@@ -99,9 +100,29 @@ class Permission extends ConnectedRecord {
     users = new Relation(this.roles, 'has_role', {target: User, direction: -1});
 }
 ```
-## Automatic fields
 
-AGR automatically brings **uuid** key (cannot be re-defined), **created_at** and **updated_at** fields when record is reflected
+Relation instances have bunch of pretty methods to use (you can always pass a transaction as last argument):
+```javascript
+class Record {
+    async only(): Record
+    async only(null | Record): void
+
+    async has(records: Array<Record>): bool
+    async intersect(records: Array<Record>): Array<Record>
+    async add(records: Array<Record>): void
+    async delete(records: Array<Record>): void
+
+    async clear(): void
+    async size(): number
+    async entries(): Array<Record>
+
+    async where(params?: WhereParams, opts?: WhereOpts): Array<Record>
+}
+```
+
+## AGR-backed fields
+
+AGR automatically brings **uuid** key (cannot be re-defined), **created_at** and **updated_at** (in milliseconds) fields when record is reflected.
 
 ## OK, but how can I make complex queries?
 
@@ -139,13 +160,13 @@ class Entry extends Record {
 
 ## Transactions and atomicity?
 
-AGR provides simple transactions engine.
+Yes, AGR has transactions.
 Hooks (see above) are always inside a transaction.
-They can be used by using special decorator **@acceptsTransaction({force: true})** or called explicitly by connection.transaction()
+They can be used by using special decorator _(with babel-plugin-transform-decorators-legacy, will be changed to new syntax when new spec will become stable)_ **@acceptsTransaction({force: true})** or called explicitly by connection.transaction()
 All transactions should be committed or rolled back.
-On **SIGINT** AGR will attempt to rollback all not closed yet transactions.
+On **SIGINT** AGR will attempt to rollback all not closed yet transactions. By default Neo4j rolls back transactions in 60 seconds after last query.
 
-Good example is Record#firstOrCreate sugar-ish method:
+Good example of transaction usage is Record#firstOrCreate sugar-ish method:
 
 ```javascript
 class Record {
@@ -168,8 +189,8 @@ class Record {
 - [x] deep relations
 - [x] indexes
 - [x] rich Record.where query syntax ($lt, $gt, $lte, $gte, $has, $in and so on)
-- [ ] relations validation
 - [x] one-to-one relations
+- [ ] relations validation
 - [ ] total test coverage
 - [ ] performance optimisations
 - [ ] optimistic and pessimistic locks?
