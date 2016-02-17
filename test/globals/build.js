@@ -1,2 +1,1 @@
-import {Record, Connection, Relation} from '../../build/index'
-Object.assign(global, {Record, Connection, Relation})
+Object.assign(global, {libPath: require('path').resolve(__dirname, '../../build/index')})

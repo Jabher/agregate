@@ -3,8 +3,8 @@ import chai, {expect} from 'chai'
 chai.use(require('chai-spies'))
 import {Cypher} from 'cypher-talker'
 
-const {Record: RefRecord, Relation} = global
-const connection = new global.Connection('http://neo4j:password@localhost:7474')
+const {Record: RefRecord, Relation, Connection} = require(global.libPath)
+const connection = new Connection('http://neo4j:password@localhost:7474')
 
 class Record extends RefRecord {
     static async save(...props) { return await Promise.all(props.map(opts => new this(opts).save())) }

@@ -1,4 +1,4 @@
 --growl
---globals Record,GraphConnection,Relation
+--globals libPath
 --compilers js:babel-register
 --timeout 10000
