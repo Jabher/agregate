@@ -108,18 +108,18 @@ describe('ActiveRecord', () => {
             it('should resolve objects of subject', async() =>
                 expect(await subject.objects.entries()).to.has.length(1))
             it('should resolve objects of subject by props', async() =>
-                expect(await subject.objects.where({uuid: object.uuid})).to.has.length(1))
+                expect(await subject.objects.where({uuid: object.uuid})).to.have.length(1))
             it('should not resolve objects not of subject by props', async() =>
                 expect(await subject.objects.where({uuid: (await new TestObject().save()).uuid})).to.has.length(0))
             it('should resolve intersect objects using Relation#intersect', async() =>
                 expect(await subject.objects.intersect(
                     object,
-                    new TestObject().save()
+                    await new TestObject().save()
                 )).to.have.length(1))
             it('should resolve objects of subject by #has', async() =>
-                expect(await subject.objects.has(TestObject.where({}))).to.be.equal(true))
+                expect(await subject.objects.has(await TestObject.where({}))).to.be.equal(true))
             it('should not resolve wrong objects by #has', async() =>
-                expect(await subject.objects.has(TestSubject.where({}))).to.be.equal(false))
+                expect(await subject.objects.has(await TestSubject.where({}))).to.be.equal(false))
             it('should successfully delete subjects using Relation#delete', async() => {
                 const [entry] = await object.subjects.entries()
                 await object.subjects.delete(entry)
