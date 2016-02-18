@@ -13,7 +13,7 @@ Neo4j is Graph Database, it's schema-less and ACID-compliant.
 
 Dead simple. It's mostly purposed for ES2015-featured JavaScript, so all of the examples are written using it.
 ```javascript
-const {Connection, Record} = require('active-graph-record')
+const {Connection, Record} = require('agregate')
 
 class Entry extends Record {}
 Entry.connection = new Connection('http://neo4j:password@localhost:7474');
@@ -44,7 +44,7 @@ async function main() {
 no problems. It's dead simple too:
 
 ```javascript
-const {Connection, Record, Relation} = require('active-graph-record')
+const {Connection, Record, Relation} = require('agregate')
 class ConnectedRecord extends Record {
     static connection = new Connection('http://neo4j:password@localhost:7474');
 }
@@ -120,9 +120,9 @@ class Record {
 }
 ```
 
-## AGR-backed fields
+## agregate-backed fields
 
-AGR automatically brings **uuid** key (cannot be re-defined), **created_at** and **updated_at** (in milliseconds) fields when record is reflected.
+Agregate automatically brings **uuid** key (cannot be re-defined), **created_at** and **updated_at** (in milliseconds) fields when record is reflected.
 
 ## OK, but how can I make complex queries?
 
@@ -160,11 +160,11 @@ class Entry extends Record {
 
 ## Transactions and atomicity?
 
-Yes, AGR has transactions.
+Yes, Agregate has transactions.
 Hooks (see above) are always inside a transaction.
 They can be used by using special decorator _(with babel-plugin-transform-decorators-legacy, will be changed to new syntax when new spec will become stable)_ **@acceptsTransaction({force: true})** or called explicitly by connection.transaction()
 All transactions should be committed or rolled back.
-On **SIGINT** AGR will attempt to rollback all not closed yet transactions. By default Neo4j rolls back transactions in 60 seconds after last query.
+On **SIGINT** Agregate will attempt to rollback all not closed yet transactions. By default Neo4j rolls back transactions in 60 seconds after last query.
 
 Good example of transaction usage is Record#firstOrCreate sugar-ish method:
 
