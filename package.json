@@ -1,6 +1,6 @@
 {
   "name": "agregate",
-  "version": "0.17.0",
+  "version": "0.17.1",
   "description": "Schema-less JS-first ActiveRecord over neo4j",
   "main": "build/index.js",
   "repository": "jabher/agregate",
