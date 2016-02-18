@@ -1,9 +1,9 @@
 {
-  "name": "active-graph-record",
+  "name": "agregate",
   "version": "0.16.0",
-  "description": "Schema-less ActiveRecord over neo4j",
+  "description": "Schema-less JS-first ActiveRecord over neo4j",
   "main": "build/index.js",
-  "repository": "jabher/active-graph-record",
+  "repository": "jabher/agregate",
   "scripts": {
     "test": "mocha --compilers js:babel-register --require ./test/globals/lib",
     "test-against-build": "mocha --bail --reporter nyan --require ./test/globals/build",
