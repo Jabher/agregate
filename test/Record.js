@@ -117,9 +117,9 @@ describe('ActiveRecord', () => {
                     await new TestObject().save()
                 )).to.have.length(1))
             it('should resolve objects of subject by #has', async() =>
-                expect(await subject.objects.has(await TestObject.where({}))).to.be.equal(true))
+                expect(await subject.objects.has(await TestObject.where())).to.be.equal(true))
             it('should not resolve wrong objects by #has', async() =>
-                expect(await subject.objects.has(await TestSubject.where({}))).to.be.equal(false))
+                expect(await subject.objects.has(await TestSubject.where())).to.be.equal(false))
             it('should successfully delete subjects using Relation#delete', async() => {
                 const [entry] = await object.subjects.entries()
                 await object.subjects.delete(entry)
