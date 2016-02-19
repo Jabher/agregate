@@ -1,15 +1,17 @@
 {
   "name": "agregate",
   "version": "0.17.1",
-  "description": "Schema-less JS-first ActiveRecord over neo4j",
+  "description": "A missing piece of simple API for DB",
   "main": "build/index.js",
   "repository": "jabher/agregate",
   "scripts": {
-    "test": "mocha --compilers js:babel-register --require ./test/globals/lib",
-    "test-against-build": "mocha --bail --reporter nyan --require ./test/globals/build",
+    "test": "mocha --compilers js:babel-register",
+    "test-against-build": "AGREGATE_DIR=build mocha --bail --reporter nyan",
     "build": "babel lib --out-dir build",
-    "preversion": "git add lib/* test/* && npm run build && npm run test-against-build",
-    "postversion": "jscs --fix lib && git commit --amend --no-edit && git push -u origin master && npm publish && rm -rf ./build"
+    "commit": "git fetch && git pull && jscs --fix lib && git commit --amend --no-edit && git push -u origin master",
+
+    "preversion": "npm run build && npm run test-against-build && npm run commit",
+    "postversion": "npm publish && rm -rf ./build"
   },
   "keywords": [
     "activeRecord",
