@@ -22,8 +22,8 @@ user.save()
 .then(([user]) => console.log(user))  /*=> User {
     name: 'foo',
     surname: 'bar',
-    created_at: 1456560261097, 
-    updated_at: 1456560261097
+    createdAt: 1456560261097, 
+    updatedAt: 1456560261097
 }*/
 ```
 No factories, complex configs and CLI tools.
@@ -116,8 +116,8 @@ class Relation {
 
 ## Auto-generated properties
 - **uuid** - non-enumerable, non-configurable, automatically generated on creation
-- **created_at** - non-enumerable, non-configurable, automatically generated on creation
-- **updated_at** - non-enumerable, non-configurable, automatically generated on creation and updation
+- **createdAt** - non-enumerable, non-configurable, automatically generated on creation
+- **updatedAt** - non-enumerable, non-configurable, automatically generated on creation and updation
 
 ## OK, but how can I make complex queries?
 
@@ -126,8 +126,8 @@ All details are provided in API page, in brief - order, limit, offset can be use
 
 Examples:
 ```javascript
-Entry.where({foo: 1000}, {limit: 10, offset: 10, order: 'created_at'})
-Entry.where({updated_at: {$gte: Date.now() - 1000}}, {order: ['created_at DESC']})
+Entry.where({foo: 1000}, {limit: 10, offset: 10, order: 'createdAt'})
+Entry.where({updatedAt: {$gte: Date.now() - 1000}}, {order: ['createdAt DESC']})
 Entry.where({foo: {$exists: true, $startsWith: ['b', 'ba', 'baz'], $endsWith: 'bar', $contains: 'z'}})
 
 // here e.g. {foo: [1,2,3,4,5], bar: 3} will be reflected.
