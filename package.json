@@ -1,6 +1,6 @@
 {
   "name": "agregate",
-  "version": "0.17.1",
+  "version": "0.17.2",
   "description": "A missing piece of simple API for DB",
   "main": "build/index.js",
   "repository": "jabher/agregate",
@@ -9,7 +9,6 @@
     "test-against-build": "AGREGATE_DIR=build mocha --bail --reporter nyan",
     "build": "babel lib --out-dir build",
     "commit": "git fetch && git pull && jscs --fix lib && git commit --amend --no-edit && git push -u origin master",
-
     "preversion": "npm run build && npm run test-against-build && npm run commit",
     "postversion": "npm publish && rm -rf ./build"
   },
