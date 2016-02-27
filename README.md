@@ -1,66 +1,68 @@
-# ActiveRecord implementation for ES2015 with neo4j as back-end
-_this software is beta stage and is not intended to be used in serous production projects_
-_developers of this software are not responsible for data loss and corruption, lunar eclipses and dead kittens_
+# Agregate
+##### A "missing piece" of DB clients for Node.JS, accenting on familiar JS experience, developer's freedom and simplicity of usage
 
-## What is it?
+> Programmers waste enormous amounts of time thinking about, or worrying about, the speed of noncritical parts of their programs, and these attempts at efficiency actually have a strong negative impact when debugging and maintenance are considered. **Donald Knuth**
 
-ActiveRecord is common pattern in software development which declares that there is special class or classes who are
-responsible for database reflection, line-by-line or node-by-node.
+_**disclaimer 1**: this software is beta stage and is not intended to be used in heavy production projects. I am is not responsible for data loss and corruption, lunar eclipses and dead kittens._
 
-Neo4j is Graph Database, it's schema-less and ACID-compliant.
+#### Enviroment and preparations
+Agregate's only back-end is [neo4j](http://neo4j.com) (v2 and v3 beta) for now. You can [install](http://neo4j.com/docs/stable/server-installation.html) it or [request a SaaS sandbox](http://neo4j.com/sandbox/). 
 
-## How to use it?
+[This](https://github.com/Jabher/agregate/blob/master/.babelrc) (es6, es2015, plus decorators, static class properties and bind operator) babel preset is recommended to be used for the best experience. However, library is shipped with compiled to ES5 files by default.
 
-Dead simple. It's mostly purposed for ES2015-featured JavaScript, so all of the examples are written using it.
+#### Familiar JS experience
+So, you need User class reflecting DB "table". You simply write
+```
+class User extends Record {}
+
+const user = new User({name: 'foo'})
+user.surname = 'bar'
+user.save()
+.then(() => User.where({name: 'foo'}))
+.then(([user]) => console.log(user))  /*=> User {
+    name: 'foo',
+    surname: 'bar',
+    created_at: 1456560261097, 
+    updated_at: 1456560261097
+}*/
+```
+No factories, complex configs and CLI tools.
+Every enumerable property (except relations, but it will be explained later) is reflectable into DB, back and forth.
+
+## Developer's freedom
+Common DB lib usually requires you to keep specific file structure and/or using CLI tools and/or remember hundreds of methods, properties and signatures.
+**Agregate** was aimed to keep [Minimal API Surface Area](http://2014.jsconf.eu/speakers/sebastian-markbage-minimal-api-surface-area-learning-patterns-instead-of-frameworks.html). Agregate API is fully promise-based, Relation is trying to mimic Set API, and Record instance has just 2 core methods - Record#save and Record#delete, whose API is obvious.
+
+## Simplicity of usage
+The whole declaration of class would be something like:
 ```javascript
 const {Connection, Record} = require('agregate')
-
-class Entry extends Record {}
-Entry.connection = new Connection('http://neo4j:password@localhost:7474');
-
-// or with babel-preset-stage-1
-// here and further where static properties are used they can be replaced
-// by assignment of property to class function, like shown above
-
+//class name will be used as "table name". You can overload it with static "label" property
 class Entry extends Record {
+    //indexes are optional static properties which are used only for making DB query 'CREATE INDEX' during register() call. 
+    static indexes = new Set('foo', 'bar')
+    //for now agregate is backed by npmjs.com/package/neo4j, so Connection constructor is just proxying everything up to that package. You can usually just use URL string syntax
+    //static properties are inheritable, so you only need to declare in once in parent class
     static connection = new Connection('http://neo4j:password@localhost:7474');
 }
-
-Entry.register() //creates indexes and makes some internal magic for resolving
-
-async function main() {
-    const entry = new Entry()
-    entry.foo = 'bar'
-    await entry.save()
-
-    const entries = await Entry.where({foo: 'bar'})
-    console.log(entries.length) // => 1
-    console.log(entries[0].foo) // => 'bar'
-}
+//As we cannot have a callbacks on class constructor (at least without crazy hacks) explicit .register() call is required for any concrete class
+Entry.register() 
 ```
 
 ## Wait, but I need relations
-
-no problems. It's dead simple too:
-
+OK, let's add relations.
 ```javascript
 const {Connection, Record, Relation} = require('agregate')
-class ConnectedRecord extends Record {
-    static connection = new Connection('http://neo4j:password@localhost:7474');
+//we assume that we already made something like Record.connection = ...
+
+class RecordObject extends Record {
+    //signature of constructor is 
+    //(source: Record|Relation, label: string[, {target?: RecordClass, direction?: number = 1}])
+    subjects = new Relation(this, 'relation');
 }
 
-class RecordObject extends ConnectedRecord {
-    subjects = new Relation(this, 'relation' /*internal relation label-name*/);
-
-    //note: it is NOT a static property. It can be replaced with
-    constructor(...args){
-        super(...args);
-        this.subjects = new Relation(this, 'relation' /*internal relation label-name*/);
-    }
-}
-
-class RecordSubject extends ConnectedRecord {
-    //target is optional! and direction is optional too, it should be -1 for reverse relations.
+class RecordSubject extends Record {
+    //target is limitation of relation to one record group, and direction is, well, direction. Direction is 1 by default, which is '->' relation. -1 relation is '<-'. It means there can be 2 relations with same label in different directions. 0-relation is plain '-', there can be only 1 relation of this type.
     subjects = new Relation(this, 'relation', {target: Object, direction: -1});
 }
 
@@ -68,67 +70,59 @@ RecordObject.register()
 RecordSubject.register()
 
 async function main() {
-    const object = await new RecordObject({baz: true}).save()
+    const object = await new RecordObject({foo: 'bar'}).save()
     const subject = await new RecordSubject().save()
     await object.subjects.add(subject)
 
     console.log(await subject.objects.size()) // => 1
     const objects = await subject.objects.entries()
-    console.log(objects[0].baz) => //true
+    console.log(objects[0].foo) => //bar
 }
 ```
 
-even for deep relations:
+Deep relations are simple as hell:
 
 ```javascript
-class User extends ConnectedRecord {
+import Role from './role'
+import Permission from './permission'
+export default class User extends ConnectedRecord {
     roles = new Relation(this, 'has_role', {target: Role});
     permissions = new Relation(this.roles, 'has_permission', {target: Permission});
-
-    async hasPermission(permission) {
-        return await this.permissions.has(permission)
-    }
-}
-
-class Role extends ConnectedRecord {
-    users = new Relation(this, 'has_role', {target: Role, direction: -1});
-    permissions = new Relation(this, 'has_permission', {target: Permission});
-}
-
-class Permission extends ConnectedRecord {
-    roles = new Relation(this, 'has_permission', {target: Role, direction: -1});
-    users = new Relation(this.roles, 'has_role', {target: User, direction: -1});
+    hasPermission = ::this.permissions.has
 }
 ```
-
-Relation instances have bunch of pretty methods to use (you can always pass a transaction as last argument):
+Relation instances have bunch of pretty methods to use:
 ```javascript
-class Record {
+class Relation {
+    //overloaded method to implement one-to-one relation
     async only(): Record
     async only(null | Record): void
-
-    async has(records: Array<Record>): bool
-    async intersect(records: Array<Record>): Array<Record>
-    async add(records: Array<Record>): void
-    async delete(records: Array<Record>): void
-
-    async clear(): void
-    async size(): number
-    async entries(): Array<Record>
-
+    //just for you to know: signature of Record.where and Relation#where are 100% same
     async where(params?: WhereParams, opts?: WhereOpts): Array<Record>
+    
+    //only non-familiar method. Returs intersection of relation and passed set
+    async intersect(records: Array<Record>): Array<Record>
+    
+    //this part mimics es6 Set class
+    async add(records: Array<Record>): void
+    async clear(): void
+    async delete(records: Array<Record>): void
+    async entries(): Array<Record>
+    async has(records: Array<Record>): bool
+    //note: size is not property, but async method
+    async size(): number
 }
 ```
 
-## agregate-backed fields
-
-Agregate automatically brings **uuid** key (cannot be re-defined), **created_at** and **updated_at** (in milliseconds) fields when record is reflected.
+## Auto-generated properties
+- **uuid** - non-enumerable, non-configurable, automatically generated on creation
+- **created_at** - non-enumerable, non-configurable, automatically generated on creation
+- **updated_at** - non-enumerable, non-configurable, automatically generated on creation and updation
 
 ## OK, but how can I make complex queries?
 
 Record and Relation have static **where** method to use for querying.
-All details are provided in API page, in brief - order, limit, offset can be used for filtering,
-equality, existence, numeric (greater/less), string (starts/ends with, contains), array (contains/includes) queries are available
+All details are provided in API page, in brief - order, limit, offset can be used for filtering. Equality, existence, numeric (greater/less), string (starts/ends with, contains), array (contains/includes) queries are provided.
 
 Examples:
 ```javascript
@@ -146,12 +140,12 @@ Entry.where({foo: {$in: [[0], [1,2,3,4,5]]}}})
 
 ## Hooks?
 
-Sure. beforeCreate, afterCreate, beforeUpdate, afterUpdate, beforeDestroy, afterDestroy are available hooks
+**beforeCreate**, **afterCreate**, **beforeUpdate**, **afterUpdate**, **beforeDestroy**, **afterDestroy** are available hooks
 
 ```javascript
 class Entry extends Record {
     async beforeCreate() {
-        //this.connection points here to transaction, so you have to pass it if calling other classes
+        //this.connection points to transaction during the transaction, so you have to pass it if calling other classes
         const test = await Test.where({id: this.id}, this.connection)
         this.testId = test.testId
     }
@@ -161,9 +155,13 @@ class Entry extends Record {
 ## Transactions and atomicity?
 
 Yes, Agregate has transactions.
-Hooks (see above) are always inside a transaction.
-They can be used by using special decorator _(with babel-plugin-transform-decorators-legacy, will be changed to new syntax when new spec will become stable)_ **@acceptsTransaction({force: true})** or called explicitly by connection.transaction()
-All transactions should be committed or rolled back.
+
+Hooks (see above) are always ran inside a transaction (transaction is same for pre-hook, operation itself and post-hook).
+
+Decorator **@acceptsTransaction({force: true})** can be used _(with babel-plugin-transform-decorators-legacy, will be changed to new syntax when new spec will become stable)_, or transaction can be constructed explicitly by connection.transaction()
+
+All transactions should be committed or rolled back. Decorator commits everything automatically on success, rolls back on error.
+
 On **SIGINT** Agregate will attempt to rollback all not closed yet transactions. By default Neo4j rolls back transactions in 60 seconds after last query.
 
 Good example of transaction usage is Record#firstOrCreate sugar-ish method:
