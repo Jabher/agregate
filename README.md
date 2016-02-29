@@ -59,7 +59,10 @@ const {Connection, Record, Relation} = require('agregate')
 class RecordObject extends Record {
     //signature of constructor is 
     //(source: Record|Relation, label: string[, {target?: RecordClass, direction?: number = 1}])
-    subjects = new Relation(this, 'relation');
+    constructor(...args) {
+        super(...args);
+        this.subjects = new Relation(this, 'relation');
+    }
 }
 
 class RecordSubject extends Record {
@@ -67,7 +70,10 @@ class RecordSubject extends Record {
     //Direction is 1 by default, which is '->' relation. -1 relation is '<-'. 
     //It means there can be 2 relations with same label in different directions. 
     //0-relation is plain '-', there can be only 1 relation of this type.
-    subjects = new Relation(this, 'relation', {target: Object, direction: -1});
+    constructor(...args) {
+        super(...args);
+        this.subjects = new Relation(this, 'relation', {target: Object, direction: -1});
+    }
 }
 
 RecordObject.register()
@@ -90,9 +96,13 @@ Deep relations are simple as hell:
 import Role from './role'
 import Permission from './permission'
 export default class User extends ConnectedRecord {
-    roles = new Relation(this, 'has_role', {target: Role});
-    permissions = new Relation(this.roles, 'has_permission', {target: Permission});
-    hasPermission = ::this.permissions.has
+    constructor(...args) {
+        super(...args);
+        
+        this.roles = new Relation(this, 'has_role', {target: Role});
+        this.permissions = new Relation(this.roles, 'has_permission', {target: Permission});
+        this.hasPermission = ::this.permissions.has
+    }
 }
 ```
 
