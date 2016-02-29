@@ -3,16 +3,16 @@
 
 > Programmers waste enormous amounts of time thinking about, or worrying about, the speed of noncritical parts of their programs, and these attempts at efficiency actually have a strong negative impact when debugging and maintenance are considered. **Donald Knuth**
 
-_**disclaimer 1**: this software is beta stage and is not intended to be used in heavy production projects. I am is not responsible for data loss and corruption, lunar eclipses and dead kittens._
+_**disclaimer**: this software is beta stage and is not intended to be used in heavy production projects. I am is not responsible for data loss and corruption, lunar eclipses and dead kittens._
 
 #### Enviroment and preparations
-Agregate's only back-end is [neo4j](http://neo4j.com) (v2 and v3 beta) for now. You can [install](http://neo4j.com/docs/stable/server-installation.html) it or [request a SaaS sandbox](http://neo4j.com/sandbox/). 
+Agregate's only back-end for now is [neo4j](http://neo4j.com) (v2 and v3 beta are supported) for now. You can [install](http://neo4j.com/docs/stable/server-installation.html) it or [request a free SaaS sandbox trial](http://neo4j.com/sandbox/). 
 
 [This](https://github.com/Jabher/agregate/blob/master/.babelrc) (es6, es2015, plus decorators, static class properties and bind operator) babel preset is recommended to be used for the best experience. However, library is shipped with compiled to ES5 files by default.
 
 #### Familiar JS experience
 So, you need User class reflecting DB "table". You simply write
-```
+```javascript
 class User extends Record {}
 
 const user = new User({name: 'foo'})
@@ -29,11 +29,11 @@ user.save()
 No factories, complex configs and CLI tools.
 Every enumerable property (except relations, but it will be explained later) is reflectable into DB, back and forth.
 
-## Developer's freedom
+#### Developer's freedom
 Common DB lib usually requires you to keep specific file structure and/or using CLI tools and/or remember hundreds of methods, properties and signatures.
 **Agregate** was aimed to keep [Minimal API Surface Area](http://2014.jsconf.eu/speakers/sebastian-markbage-minimal-api-surface-area-learning-patterns-instead-of-frameworks.html). Agregate API is fully promise-based, Relation is trying to mimic Set API, and Record instance has just 2 core methods - Record#save and Record#delete, whose API is obvious.
 
-## Simplicity of usage
+#### Simplicity of usage
 The whole declaration of class would be something like:
 ```javascript
 const {Connection, Record} = require('agregate')
@@ -49,7 +49,7 @@ class Entry extends Record {
 Entry.register() 
 ```
 
-## Wait, but I need relations
+#### Wait, but I need relations
 OK, let's add relations.
 ```javascript
 const {Connection, Record, Relation} = require('agregate')
@@ -114,14 +114,18 @@ class Relation {
 }
 ```
 
-## Auto-generated properties
-- **uuid** - non-enumerable, non-configurable, automatically generated on creation
-- **createdAt** - non-enumerable, non-configurable, automatically generated on creation
-- **updatedAt** - non-enumerable, non-configurable, automatically generated on creation and updation
+#### Auto-generated record properties 
 
-## OK, but how can I make complex queries?
+all of the properties are non-enumerable, non-configurable and exists only for reflected record.
 
-Record and Relation have static **where** method to use for querying.
+- **uuid** - automatically generated on creation
+- **createdAt** - automatically generated on creation
+- **updatedAt** - automatically generated on creation and update
+
+#### OK, but how can I make complex queries?
+
+**Record.where** and **Relation#where** methods are provided for querying.
+
 All details are provided in API page, in brief - order, limit, offset can be used for filtering. Equality, existence, numeric (greater/less), string (starts/ends with, contains), array (contains/includes) queries are provided.
 
 Examples:
@@ -138,7 +142,7 @@ Entry.where({foo: {$has: [1,2,3]}, bar: {$in: [1,2,3]}})
 Entry.where({foo: {$in: [[0], [1,2,3,4,5]]}}})
 ```
 
-## Hooks?
+#### Hooks?
 
 **beforeCreate**, **afterCreate**, **beforeUpdate**, **afterUpdate**, **beforeDestroy**, **afterDestroy** are available hooks
 
@@ -152,7 +156,7 @@ class Entry extends Record {
 }
 ```
 
-## Transactions and atomicity?
+#### Transactions and atomicity?
 
 Yes, Agregate has transactions.
 
@@ -164,7 +168,7 @@ All transactions should be committed or rolled back. Decorator commits everythin
 
 On **SIGINT** Agregate will attempt to rollback all not closed yet transactions. By default Neo4j rolls back transactions in 60 seconds after last query.
 
-Good example of transaction usage is Record#firstOrCreate sugar-ish method:
+Good example of transaction usage is provided **Record.firstOrCreate** sugar-ish method:
 
 ```javascript
 class Record {
@@ -180,7 +184,7 @@ class Record {
 }
 ```
 
-## Roadmap
+#### Roadmap
 - [x] sort
 - [x] offset and limit
 - [x] has
