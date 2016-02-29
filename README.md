@@ -19,7 +19,7 @@ const user = new User({name: 'foo'})
 user.surname = 'bar'
 user.save()
 .then(() => User.where({name: 'foo'}))
-.then(([user]) => console.log(user))  // => User { name: 'foo', surname: 'bar' }
+.then(([user]) => console.log(user))  //=> User {name: 'foo', surname: 'bar'}
 ```
 No factories, complex configs and CLI tools.
 Every enumerable property (except relations, but it will be explained later) is reflectable into DB, back and forth.
@@ -34,18 +34,24 @@ The whole declaration of class would be something like:
 const {Connection, Record} = require('agregate')
 //class name will be used as "table name". You can overload it with static "label" property
 class Entry extends Record {
-    //indexes are optional static properties which are used only for making DB query 'CREATE INDEX' during register() call. 
+    //indexes are optional static properties 
+    //which are used only for making DB query 'CREATE INDEX' during register() call. 
     static indexes = new Set('foo', 'bar')
-    //for now agregate is backed by npmjs.com/package/neo4j, so Connection constructor is just proxying everything up to that package. You can usually just use URL string syntax
+    //for now agregate is backed by npmjs.com/package/neo4j,
+    //so Connection constructor is just proxying everything up to that package. 
+    //You can usually just use URL string syntax.
     //static properties are inheritable, so you only need to declare in once in parent class
     static connection = new Connection('http://neo4j:password@localhost:7474');
 }
-//As we cannot have a callbacks on class constructor (at least without crazy hacks) explicit .register() call is required for any concrete class
+//As we cannot have a callbacks on class constructor, (at least without crazy hacks) 
+//explicit .register() call is required for any concrete class
 Entry.register() 
 ```
 
 #### Wait, but I need relations
+
 OK, let's add relations.
+
 ```javascript
 const {Connection, Record, Relation} = require('agregate')
 //we assume that we already made something like Record.connection = ...
@@ -57,7 +63,10 @@ class RecordObject extends Record {
 }
 
 class RecordSubject extends Record {
-    //target is limitation of relation to one record group, and direction is, well, direction. Direction is 1 by default, which is '->' relation. -1 relation is '<-'. It means there can be 2 relations with same label in different directions. 0-relation is plain '-', there can be only 1 relation of this type.
+    //target is limitation of relation to one record group, and direction is, well, direction. 
+    //Direction is 1 by default, which is '->' relation. -1 relation is '<-'. 
+    //It means there can be 2 relations with same label in different directions. 
+    //0-relation is plain '-', there can be only 1 relation of this type.
     subjects = new Relation(this, 'relation', {target: Object, direction: -1});
 }
 
@@ -86,7 +95,9 @@ export default class User extends ConnectedRecord {
     hasPermission = ::this.permissions.has
 }
 ```
+
 Relation instances have bunch of pretty methods to use:
+
 ```javascript
 class Relation {
     //overloaded method to implement one-to-one relation
