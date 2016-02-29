@@ -19,12 +19,7 @@ const user = new User({name: 'foo'})
 user.surname = 'bar'
 user.save()
 .then(() => User.where({name: 'foo'}))
-.then(([user]) => console.log(user))  /*=> User {
-    name: 'foo',
-    surname: 'bar',
-    createdAt: 1456560261097, 
-    updatedAt: 1456560261097
-}*/
+.then(([user]) => console.log(user))  // => User { name: 'foo', surname: 'bar' }
 ```
 No factories, complex configs and CLI tools.
 Every enumerable property (except relations, but it will be explained later) is reflectable into DB, back and forth.
