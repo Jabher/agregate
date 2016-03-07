@@ -15,6 +15,7 @@
   "keywords": [
     "activeRecord",
     "db",
+    "agregate",
     "neo4j",
     "cypher"
   ],

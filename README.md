@@ -8,7 +8,7 @@ _**disclaimer**: this software is beta stage and is not intended to be used in h
 #### Enviroment and preparations
 Agregate's only back-end for now is [neo4j](http://neo4j.com) (v2 and v3 beta are supported) for now. You can [install](http://neo4j.com/docs/stable/server-installation.html) it or [request a free SaaS sandbox trial](http://neo4j.com/sandbox/). 
 
-[This](https://github.com/Jabher/agregate/blob/master/.babelrc) (es6, es2015, plus decorators, static class properties and bind operator) babel preset is recommended to be used for the best experience. However, library is shipped with compiled to ES5 files by default.
+[This](https://github.com/Jabher/agregate/blob/master/.babelrc) (es6, es2015, plus decorators, static class properties and bind operator) babel preset is recommended to be used for the best experience. However, library is shipped with compiled to ES5 files by default. *Note: bind instance property expressions work only in babel 6.5+ plugins, older versions will throw an error due to already removed bug in babel*
 
 #### Familiar JS experience
 So, you need User class reflecting DB "table". You simply write
@@ -59,10 +59,7 @@ const {Connection, Record, Relation} = require('agregate')
 class RecordObject extends Record {
     //signature of constructor is 
     //(source: Record|Relation, label: string[, {target?: RecordClass, direction?: number = 1}])
-    constructor(...args) {
-        super(...args);
-        this.subjects = new Relation(this, 'relation');
-    }
+    subjects = new Relation(this, 'relation');
 }
 
 class RecordSubject extends Record {
@@ -70,10 +67,7 @@ class RecordSubject extends Record {
     //Direction is 1 by default, which is '->' relation. -1 relation is '<-'. 
     //It means there can be 2 relations with same label in different directions. 
     //0-relation is plain '-', there can be only 1 relation of this type.
-    constructor(...args) {
-        super(...args);
-        this.subjects = new Relation(this, 'relation', {target: Object, direction: -1});
-    }
+    subjects = new Relation(this, 'relation', {target: Object, direction: -1});
 }
 
 RecordObject.register()
@@ -90,19 +84,15 @@ async function main() {
 }
 ```
 
-Deep relations are simple as hell:
+Deep relations are extremely simple:
 
 ```javascript
 import Role from './role'
 import Permission from './permission'
 export default class User extends ConnectedRecord {
-    constructor(...args) {
-        super(...args);
-        
-        this.roles = new Relation(this, 'has_role', {target: Role});
-        this.permissions = new Relation(this.roles, 'has_permission', {target: Permission});
-        this.hasPermission = ::this.permissions.has
-    }
+    roles = new Relation(this, 'has_role', {target: Role});
+    permissions = new Relation(this.roles, 'has_permission', {target: Permission});
+    hasPermission = ::this.permissions.has
 }
 ```
 
