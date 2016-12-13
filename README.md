@@ -3,7 +3,7 @@
 
 > Programmers waste enormous amounts of time thinking about, or worrying about, the speed of noncritical parts of their programs, and these attempts at efficiency actually have a strong negative impact when debugging and maintenance are considered. **Donald Knuth**
 
-_**disclaimer**: this software is beta stage and is not intended to be used in heavy production projects. I am is not responsible for data loss and corruption, lunar eclipses and dead kittens._
+_**disclaimer**: this software is alpha stage and is not intended to be used in heavy production projects. I am is not responsible for data loss and corruption, lunar eclipses and dead kittens._
 
 #### Enviroment and preparations
 Agregate's only back-end for now is [neo4j](http://neo4j.com) (v2 and v3 beta are supported) for now. You can [install](http://neo4j.com/docs/stable/server-installation.html) it or [request a free SaaS sandbox trial](http://neo4j.com/sandbox/). 
