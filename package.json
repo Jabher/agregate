@@ -8,7 +8,7 @@
     "test": "mocha --compilers js:babel-register",
     "test-against-build": "AGREGATE_DIR=build mocha --bail --reporter nyan",
     "build": "babel lib --out-dir build",
-    "commit": "git fetch && git pull && jscs --fix lib && git commit -m \"linting\" --no-edit && git push -u origin master",
+    "commit": "git fetch && git pull && jscs --fix lib && [[ `git status --porcelain` ]] && git commit -m \"linting applied \" --no-edit || true && git push -u origin master",
     "preversion": "npm run build && npm run test-against-build && npm run commit",
     "postversion": "npm publish && rm -rf ./build"
   },
