@@ -1,16 +1,30 @@
-import 'babel-polyfill'
-import chai, {expect} from 'chai'
+import 'babel-polyfill';
+import chai, {expect} from 'chai';
+import {Cypher} from 'cypher-talker';
 chai.use(require('chai-spies'))
-import {Cypher} from 'cypher-talker'
 
 const {Record: RefRecord, Relation, Connection} = require(`../${process.env.AGREGATE_DIR || 'lib'}/`)
-const connection = new Connection('http://neo4j:password@localhost:7474')
+const connection = new Connection({host: 'localhost', username: 'neo4j', password: 'password'});
 
 class Record extends RefRecord {
     static async save(...props) { return await Promise.all(props.map(opts => new this(opts).save())) }
 
     static connection = connection;
 }
+
+describe('connection', () => {
+    it('should return value', async() =>
+        expect(await connection.query(Cypher.tag`return 5`)).to.deep.equal([5]))
+    it('should return empty array', async() =>
+        expect(await connection.query(Cypher.tag`match (r:Wabawabalabdab) return r`)).to.deep.equal([]))
+    it('should return object', async() =>
+        expect(await connection.query(Cypher.tag`create (t:Test {foo: 'bar'}) return t`)).to.deep.equal([
+            {
+                [Connection.labels]: ['Test'],
+                foo: 'bar'
+            }
+        ]))
+})
 
 describe('ActiveRecord', () => {
     class Test extends Record {}
@@ -25,7 +39,14 @@ describe('ActiveRecord', () => {
         beforeEach(async() =>
             await (instance = new Test(opts)).save())
 
-        it('should create new record', async() =>
+        it.only('should create new record', async() =>
+            console.log('DEBUG THIS!!!') ||
+            console.log('DEBUG THIS!!!') ||
+            console.log('DEBUG THIS!!!') ||
+            console.log('DEBUG THIS!!!') ||
+            console.log('DEBUG THIS!!!') ||
+            console.log('DEBUG THIS!!!') ||
+            console.log('DEBUG THIS!!!') ||
             expect(await Test.byUuid(instance.uuid))
                 .to.deep.include(opts))
         it('should create new record by Record#firstOrInitialize', async() =>
@@ -371,7 +392,7 @@ describe('ActiveRecord', () => {
             expect(testRecord[afterHookName], 'after hook').to.be.called.once()
         })
 
-        it('should support transactions', async () => {
+        it('should support transactions', async() => {
             Object.assign(testRecord, {
                 async beforeCreate() {
                     expect(await Test.where({state: 1}, this.connection)).to.have.length(0)
@@ -385,7 +406,7 @@ describe('ActiveRecord', () => {
             await testRecord.save()
             expect(await Test.where({state: 1})).to.have.length(1)
         })
-        it('should be affected by modifications in before hook', async () => {
+        it('should be affected by modifications in before hook', async() => {
             Object.assign(testRecord, {
                 async beforeCreate() { this.state = 2 },
                 state: 1
@@ -474,36 +495,15 @@ describe('ActiveRecord', () => {
         })
     })
 
-    describe('events', () => {
-        it('should receive created event', async(done) => {
-            Test.once('created', (record) => {
-                expect(record)
-                    .to.deep.include({val: 1})
-                done()
-                done = () => {}
-            })
-            await new Test({val: 1}).save()
-        })
-        it('should receive updated event', async(done) => {
-            Test.once('updated', (record) => {
-                expect(record)
-                    .to.deep.include({val: 2})
-                done()
-                done = () => {}
-            })
-            const entry = await new Test({val: 1}).save()
-            await Object.assign(entry, {val: 2}).save()
-        })
-    })
     describe('concurrent transaction calls', () => {
         let tx
         beforeEach(() => {
             tx = connection.transaction()
         })
-        afterEach(async () => {
+        afterEach(async() => {
             tx.commit()
         })
-        it('should not crash', async () => {
+        it('should not crash', async() => {
             await Promise.all([
                 Test.where(tx),
                 Test.where(tx),

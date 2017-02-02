@@ -1,4 +1,4 @@
 {
-  "presets": ["stage-2", "es2015"],
+  "presets": ["stage-2", "latest"],
   "plugins": ["transform-decorators-legacy", "transform-function-bind", "transform-class-properties"]
 }
