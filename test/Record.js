@@ -348,6 +348,13 @@ describe('ActiveRecord', () => {
             expect(testRecord[afterHookName], 'after hook').to.be.called.once()
         })
 
+        it(`should contain metadata in afterCreate hook`, async() => {
+            testRecord.afterCreate = chai.spy(function () {
+                expect(this.uuid).to.not.equal(undefined)
+            })
+            await testRecord.save()
+        })
+
         it(`should process update hooks`, async() => {
             const beforeHookName = `beforeUpdate`
             const afterHookName = `afterUpdate`
