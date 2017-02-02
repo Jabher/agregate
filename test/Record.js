@@ -14,10 +14,11 @@ class Record extends RefRecord {
 
 describe('ActiveRecord', () => {
     class Test extends Record {}
+    before(async() =>
+        await Test.register())
+
     beforeEach(async() =>
         await connection.query(Cypher.tag`MATCH (n) DETACH DELETE n`))
-    beforeEach(async() =>
-        await Test.register())
 
     describe('classes', () => {
         let instance
@@ -72,9 +73,9 @@ describe('ActiveRecord', () => {
         }
         let object
         let subject
-        before(() => {
-            TestObject.register()
-            TestSubject.register()
+        before(async () => {
+            await TestObject.register()
+            await TestSubject.register()
         })
         beforeEach(async() => {
             await (object = new TestObject()).save()
@@ -89,7 +90,7 @@ describe('ActiveRecord', () => {
         })
         describe('promise-management', () => {
             it('should support promise entry sources', async() => {
-                await object.subjects.add(TestSubject.where({uuid: subject.uuid}))
+                await object.subjects.add(await TestSubject.where({uuid: subject.uuid}))
                 expect(await object.subjects.size()).to.be.equal(1)
             })
         })
@@ -162,13 +163,13 @@ describe('ActiveRecord', () => {
                 it('should resolve intersect objects using Relation#intersect', async() =>
                     expect(await subject.objects.intersect(
                         object,
-                        new TestObject().save(),
+                        await new TestObject().save(),
                         sub
                     )).to.have.length(1))
                 it('should resolve objects of subject by #has', async() =>
-                    expect(await subject.objects.has(TestObject.where({}, sub))).to.be.equal(true))
+                    expect(await subject.objects.has(await TestObject.where({}, sub))).to.be.equal(true))
                 it('should not resolve wrong objects by #has', async() =>
-                    expect(await subject.objects.has(TestSubject.where({}, sub))).to.be.equal(false))
+                    expect(await subject.objects.has(await TestSubject.where({}, sub))).to.be.equal(false))
                 it('should successfully delete subjects using Relation#delete', async() => {
                     const [entry] = await object.subjects.entries(sub)
                     await object.subjects.delete(entry, sub)
@@ -195,10 +196,10 @@ describe('ActiveRecord', () => {
             let startObject
             let midObject
             let endObject
-            before(() => {
-                TestSourceObject.register()
-                TestIntermediateObject.register()
-                TestEndObject.register()
+            before(async () => {
+                await TestSourceObject.register()
+                await TestIntermediateObject.register()
+                await TestEndObject.register()
             })
 
             beforeEach(async() => {
@@ -259,8 +260,8 @@ describe('ActiveRecord', () => {
         }
         let object1
         let object2
-        before(() => {
-            TestSelfObject.register()
+        before(async () => {
+            await TestSelfObject.register()
         })
         beforeEach(async() => {
             await (object1 = new TestSelfObject()).save()
@@ -346,6 +347,7 @@ describe('ActiveRecord', () => {
             expect(testRecord[beforeHookName], 'before hook').to.be.called.once()
             expect(testRecord[afterHookName], 'after hook').to.be.called.once()
         })
+
         it(`should process update hooks`, async() => {
             const beforeHookName = `beforeUpdate`
             const afterHookName = `afterUpdate`
