@@ -318,6 +318,12 @@ describe('ActiveRecord', () => {
             expect(await Test.where({idx: items[0].idx}))
                 .to.have.deep.property('[0]')
                 .that.deep.includes(items[0]))
+        it('should support reverse order', async() => {
+            const limit = 2
+            const result = await Test.where({test}, {limit: 2, order: 'idx DESC'})
+            expect(result).to.have.length(limit)
+            expect(result.map(res => res.idx)).to.deep.equal([5, 4])
+        })
         it('should support offset', async() => {
             const limit = 2
             const result = await Test.where({test}, {limit: 2, order: 'idx ASC'})
@@ -518,6 +524,32 @@ describe('ActiveRecord', () => {
                 Test.where(tx),
                 Test.where(tx)
             ])
+        })
+    })
+
+    describe('misc bugs - should be re-spreaded into everything else', () => {
+        it('should not reset into instance properties', async () => {
+            class Test2 extends Test {
+                foo = 'bar';
+            }
+
+            const t = new Test2();
+            t.foo = 'baz';
+            await t.save();
+            expect(t.foo).to.equal('baz');
+        })
+        it('should have access to class methods in hooks', async () => {
+            class Test2 extends Test {
+                bar() { return 'bar'; }
+
+                async beforeCreate() {
+                    this.foo = this.bar();
+                }
+            }
+
+            const t = new Test2();
+            await t.save();
+            expect(t.foo).to.equal('bar');
         })
     })
 })
