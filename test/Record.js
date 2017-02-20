@@ -3,7 +3,7 @@ import chai, {expect} from 'chai'
 chai.use(require('chai-spies'))
 import {Cypher} from 'cypher-talker'
 
-const {Record: RefRecord, Relation, Connection} = require(`../${process.env.AGREGATE_DIR || 'lib'}/`)
+const {Record: RefRecord, Relation, Connection} = require(`../${process.env.AGREGATE_DIR || 'packageJson'}/`)
 const connection = new Connection('http://neo4j:password@localhost:7474')
 
 class Record extends RefRecord {
