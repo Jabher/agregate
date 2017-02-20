@@ -1,4 +1,7 @@
 {
-  "presets": ["stage-2", "es2015"],
-  "plugins": ["transform-decorators-legacy", "transform-function-bind", "transform-class-properties"]
+  "presets": ["stage-2", "latest"],
+  "plugins": [
+    "transform-decorators-legacy", "transform-function-bind", "transform-class-properties",
+    "syntax-flow", "transform-flow-strip-types"
+  ]
 }
