@@ -59,7 +59,7 @@ interface Queryable {
     transaction(): Queryable; //Connection creates Transaction, Transaction creates SubTransaction
 
     //you will probably never need it explicitly, but who knows
-    async query(CypherQuery): Neo4jResponse; //CypherQuery can be created using npm package 'cypher-talker'
+    async query(CypherQuery): Neo4jResponse; cypher
     async query({query?: string, params?: Object, headers?: Object, lean?: boolean}): Neo4jResponse;
 
     //if this methods will be called over connection, they will throw an error

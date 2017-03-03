@@ -1,5 +1,0 @@
---growl
---globals libPath
---require babel-polyfill
---compilers js:babel-register
---timeout 10000
