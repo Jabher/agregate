@@ -1,5 +1,4 @@
-import 'core-js/shim'
-import 'babel-regenerator-runtime'
+import './polyfill';
 
 export {Connection} from './connection'
 export {Record} from './record'

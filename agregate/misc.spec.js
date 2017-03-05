@@ -4,7 +4,7 @@
  Check for all .spec.js files for other tests
  * */
 
-import 'babel-polyfill';
+import './polyfill';
 import chai, {expect} from 'chai';
 import {Cypher} from './cypher';
 

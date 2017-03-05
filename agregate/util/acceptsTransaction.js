@@ -1,5 +1,5 @@
 // @flow
-import Reflect from '../reflect-polyfill';
+import '../polyfill';
 import * as R from 'ramda';
 import debug from 'debug';
 const log = debug('Agregate:acceptsTransactionDeco')

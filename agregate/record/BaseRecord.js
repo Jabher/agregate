@@ -1,5 +1,5 @@
 // @flow
-import Reflect from '../reflect-polyfill';
+import '../polyfill';
 import uuid from 'uuid';
 import {Cypher as C} from '../cypher';
 import acceptsTransaction from '../util/acceptsTransaction';
