@@ -1,5 +1,6 @@
 // @flow
-import type {Query,QueryBuilder} from '../../types';
+import '../../polyfill';
+import type {Query, QueryBuilder} from '../../types';
 import {v1 as neo4j} from 'neo4j-driver';
 import * as R from 'ramda';
 import debug from 'debug';
@@ -19,8 +20,8 @@ class Auth {
 }
 
 class BasicAuth extends Auth {
-    constructor(login: string,password: string) {
-        super(neo4j.auth.basic(login,password));
+    constructor(login: string, password: string) {
+        super(neo4j.auth.basic(login, password));
     }
 }
 
@@ -32,7 +33,7 @@ const rehydrationSession: {
     relations: []
 }
 
-const resetRehydrationSession = () => Object.assign(rehydrationSession,{
+const resetRehydrationSession = () => Object.assign(rehydrationSession, {
     nodes: {},
     relations: []
 })
@@ -49,22 +50,22 @@ export class Driver {
     driver: any;
     session: any;
 
-    constructor(host: string,auth: Auth,{cluster = false,readonly = false}: Init = {}) {
+    constructor(host: string, auth: Auth, {cluster = false, readonly = false}: Init = {}) {
         const uri = `${cluster ? 'bolt+routing' : 'bolt'}://${host}`;
 
-        const driver = neo4j.driver(uri,auth.auth);
+        const driver = neo4j.driver(uri, auth.auth);
 
         // todo bring nifty tricks to protect API from writing clauses
         const session = driver.session(readonly ? 'READ' : 'WRITE');
 
-        this.init = new Promise((res,rej) => {
-            driver.onCompleted = () => res([driver,session]);
+        this.init = new Promise((res, rej) => {
+            driver.onCompleted = () => res([driver, session]);
             driver.onError = (err) => {
                 logError(err);
                 if (err.message.includes('authentication failure'))
                     rej(err);
 
-                const getErrCode = R.path(['fields',0,'code']);
+                const getErrCode = R.path(['fields', 0, 'code']);
                 switch (getErrCode(err)) {
                     case 'Neo.ClientError.Security.Unauthorized':
                         rej(new Error(err.fields[0].message));
@@ -75,38 +76,38 @@ export class Driver {
                 }
             };
         })
-            .then(([driver,session]) => {
+            .then(([driver, session]) => {
                 this.driver = driver;
                 this.session = session;
-                logConnInit('Driver successfully initialized',this);
+                logConnInit('Driver successfully initialized', this);
             })
 
         // trick to disable default catch when any other .catch is executed
-        this.init.catch(err => logError('connection error encountered for',host,auth,err));
+        this.init.catch(err => logError('connection error encountered for', host, auth, err));
     }
 
     async close() {
         await this.init.catch(err => err);
-        if (this.session)            {await new Promise(res => this.session.close(res));}
-        if (this.driver)            {this.driver.close();}
+        if (this.session) {await new Promise(res => this.session.close(res));}
+        if (this.driver) {this.driver.close();}
     }
 
 
     rehydrate(value: any): any {
-        if (Array.isArray(value))            {return value.map(entry => this.rehydrate(entry));}
-        if (value instanceof neo4j.types.Node)            {return this.rehydrateNode(value);}
-        if (value instanceof neo4j.types.Relationship)            {return this.rehydrateRelation(value);}
-        if (neo4j.isInt(value))            {return value.toNumber();}
+        if (Array.isArray(value)) {return value.map(entry => this.rehydrate(entry));}
+        if (value instanceof neo4j.types.Node) {return this.rehydrateNode(value);}
+        if (value instanceof neo4j.types.Relationship) {return this.rehydrateRelation(value);}
+        if (neo4j.isInt(value)) {return value.toNumber();}
         return value;
     }
 
     dehydrate(value: any): any {
-        if (Array.isArray(value))            {return value.map(entry => this.dehydrate(entry));}
+        if (Array.isArray(value)) {return value.map(entry => this.dehydrate(entry));}
 
         return value;
     }
 
-    rehydrateRelation(value: neo4j.types.Relation): { start: any,end: any,[key: string]: any } {
+    rehydrateRelation(value: neo4j.types.Relation): { start: any, end: any, [key: string]: any } {
         const relation = this.resolveRelation(value);
         rehydrationSession.relations.push(relation);
         relation.start = value.start;
@@ -124,7 +125,7 @@ export class Driver {
     resolveRelation(value: neo4j.types.Relation): Object {
         return {
             type: 'relation',
-            labels: [ value.type ],
+            labels: [value.type],
             properties: value.properties
         };
     }
@@ -152,10 +153,10 @@ export class Driver {
         const deferred = new Promise(resFn => res = resFn)
             .then(() => this.__transactionQueue = this.__transactionQueue.filter(val => val !== deferred));
 
-        const txQueueBeforeThisTx = [ ...this.__transactionQueue ];
+        const txQueueBeforeThisTx = [...this.__transactionQueue];
         this.__transactionQueue.push(deferred);
         await Promise.all(txQueueBeforeThisTx);
-        return new Transaction(this.session.beginTransaction(),this,res);
+        return new Transaction(this.session.beginTransaction(), this, res);
     }
 }
 
@@ -167,7 +168,7 @@ class Transaction {
 
     __onError: ?() => any;
 
-    constructor(tx: any,driver: Driver,res: () => any) {
+    constructor(tx: any, driver: Driver, res: () => any) {
         logTx('beginning transaction');
         this.tx = tx;
         this.__driver = driver;
@@ -189,35 +190,35 @@ class Transaction {
     async query(query: string | QueryBuilder | Query) {
         try {
 
-            if (typeof query === 'string')                {return this.query({statement: query});}
-            if (query.toJSON instanceof Function)                {return this.query(query.toJSON());}
+            if (typeof query === 'string') {return this.query({statement: query});}
+            if (query.toJSON instanceof Function) {return this.query(query.toJSON());}
 
             await this.__driver.init;
 
-            const {statement,parameters} = query;
+            const {statement, parameters} = query;
             const dehydratedParameters = this.__driver.dehydrate(parameters);
             logQueryStart(statement);
             logQueryStart(dehydratedParameters);
 
-            const response = await this.tx.run(statement,dehydratedParameters);
-            logQueryResult('server answered for',statement,'with params:',dehydratedParameters);
+            const response = await this.tx.run(statement, dehydratedParameters);
+            logQueryResult('server answered for', statement, 'with params:', dehydratedParameters);
             logQueryResult(response.summary);
-            if (Array.isArray(response.records))                {
-                for (const record of response.records)                    {logQueryResult(record);}
-            }            else                {logQueryResult(response.records);}
+            if (Array.isArray(response.records)) {
+                for (const record of response.records) {logQueryResult(record);}
+            } else {logQueryResult(response.records);}
 
             const {records} = response;
             resetRehydrationSession();
 
             const result = this.__driver.rehydrate(records.map(({_fields}) => _fields));
-            rehydrationSession.relations.forEach(rel => Object.assign(rel,{
+            rehydrationSession.relations.forEach(rel => Object.assign(rel, {
                 start: rehydrationSession.nodes[rel.start.toString(36)] || undefined,
                 end: rehydrationSession.nodes[rel.end.toString(36)] || undefined
             }));
             logQueryResult(result);
             return result;
         } catch (e) {
-            logError('query failed',query,e);
+            logError('query failed', query, e);
             try {
                 await this.tx.rollback()
             } catch (e) {
