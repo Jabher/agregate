@@ -21,6 +21,11 @@ export class Connection extends Driver {
     relationClasses: { [key: string]: Class<Record> } = Object.create(null);
     recordClasses: { [key: string]: Class<Relation> } = Object.create(null);
 
+    __resetResolver() {
+        this.relationClasses = Object.create(null);
+        this.recordClasses = Object.create(null);
+    }
+
     __init = Promise;
 
     constructor(host: string, init: ConnectionInit) {
@@ -35,7 +40,7 @@ export class Connection extends Driver {
         const {type, properties} = value;
         const relationClass = this.relationClasses[type];
         if (relationClass) {
-            return Reflect.construct(Relation, [properties, [type]], relationClass)
+            return new relationClass(properties, [type]);
         } else {
             return super.resolveRelation(value);
         }
@@ -45,7 +50,7 @@ export class Connection extends Driver {
         const {labels, properties} = value;
         const recordClasses = labels.map(label => this.recordClasses[label]).filter(klass => klass);
         if (recordClasses.length === 1) {
-            const record = Reflect.construct(Record, [properties, labels], recordClasses[0])
+            const record = new recordClasses[0](properties, labels);
             record[s.node] = value;
             return record;
         } else if (recordClasses.length === 0) {

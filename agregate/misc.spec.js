@@ -8,7 +8,7 @@ import './polyfill';
 import chai, {expect} from 'chai';
 import {Cypher} from './cypher';
 
-import {Connection, Record as RefRecord} from './';
+import {Connection, Record as RefRecord, Relation} from './';
 import spies from 'chai-spies';
 chai.use(spies);
 const connection = new Connection('localhost', {username: 'neo4j', password: 'password'});
@@ -21,11 +21,11 @@ class Record extends RefRecord {
 
 describe('ActiveRecord', () => {
     class Test extends Record {}
-    before(async () =>
-        await Test.register())
-
-    beforeEach(async () =>
-        await connection.query(Cypher.tag`MATCH (n) DETACH DELETE n`))
+    beforeEach(async () => {
+        connection.__resetResolver();
+        await connection.query(Cypher.tag`MATCH (n) DETACH DELETE n`);
+        await Test.register();
+    });
 
     describe('misc bugs - should be re-spreaded into everything else', () => {
         it('should not reset into instance properties', async () => {
@@ -37,7 +37,7 @@ describe('ActiveRecord', () => {
             t.foo = 'baz';
             await t.save();
             expect(t.foo).to.equal('baz');
-        })
+        });
         it('should have access to class methods in hooks', async () => {
             class Test2 extends Test {
                 bar() { return 'bar'; }
@@ -50,6 +50,15 @@ describe('ActiveRecord', () => {
             const t = new Test2();
             await t.save();
             expect(t.foo).to.equal('bar');
+        });
+        it('should keep instance properties unless other values are provided', async () => {
+            class Test2 extends Test {
+                foo = new Relation(this, 'foo');
+            }
+            Test2.register();
+            await new Test2({baz: true}).save();
+            const [res] = await Test2.where({baz: true});
+            expect(res.foo).to.deep.include({label: 'foo'})
         })
     })
-})
+});

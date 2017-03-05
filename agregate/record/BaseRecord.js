@@ -35,7 +35,7 @@ export class BaseRecord {
     }
 
     constructor(props: Object = {}, node?: neo4j.types.Node) {
-        Object.assign(this, R.omit(this.constructor.__proxyProps, props))
+        Object.assign(this, R.omit(this.constructor.__proxyProps, props));
         if (node) {// $FlowFixMe
             this[s.node] = node;
         }
@@ -104,10 +104,11 @@ export class BaseRecord {
         const transaction = this.connection;
         const tempRecord = Object.defineProperties(
             // $FlowFixMe
-            Reflect.construct(BaseRecord, [{...this}, this[s.node]], this.constructor),
+            new this.constructor({...this}, this[s.node]),
             {
                 connection: {value: transaction, configurable: true}
-            })
+            });
+        Object.assign(tempRecord, this);
 
         Reflect.setPrototypeOf(tempRecord, this);
 
@@ -142,10 +143,11 @@ export class BaseRecord {
         const transaction = this.connection;
         const tempRecord = Object.defineProperties(
             // $FlowFixMe
-            Reflect.construct(BaseRecord, [{...this}, this[s.node]], this.constructor),
+            new this.constructor({...this}, this[s.node]),
             {
                 connection: {value: transaction, configurable: true}
             });
+        Object.assign(tempRecord, this);
 
         Reflect.setPrototypeOf(tempRecord, this);
 
