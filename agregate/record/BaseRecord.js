@@ -93,9 +93,13 @@ export class BaseRecord {
     toJSON(): Object {
         return R.pipe(
             R.toPairs,
-            R.reject(([, value]) => value instanceof Relation || value instanceof Function),
+            R.reject(([, value]) =>
+                value instanceof Relation ||
+                value instanceof Function ||
+                value === undefined
+            ),
             R.fromPairs
-        )({...this})
+        )({...this, uuid: this.uuid})
     }
 
     @acceptsTransaction

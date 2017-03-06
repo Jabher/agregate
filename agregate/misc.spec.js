@@ -19,7 +19,7 @@ class Record extends RefRecord {
     static connection = connection;
 }
 
-describe('ActiveRecord', () => {
+describe('Agregate', () => {
     class Test extends Record {}
     beforeEach(async () => {
         connection.__resetResolver();
@@ -59,6 +59,11 @@ describe('ActiveRecord', () => {
             await new Test2({baz: true}).save();
             const [res] = await Test2.where({baz: true});
             expect(res.foo).to.deep.include({label: 'foo'})
+        });
+        it('should contain uuid in dump', async () => {
+            const test = new Test();
+            await test.save();
+            expect(test.toJSON()).to.have.property('uuid');
         })
-    })
+    });
 });
