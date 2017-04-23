@@ -134,3 +134,10 @@ decorator / decorator factory purposed to wrap methods in order they can accept 
 function acceptsTransaction(props?: {force?: bool}): acceptsTransaction
 function acceptsTransaction(target, name, descriptor)
 ```
+
+## Performance
+Well, neo4j is not very fast. It's great in a lot of terms, but it's not extremely fast.
+But its speed is good enough for prototyping. Local neo4j on mac pro (without special configurations) 
+provides around 100 requests per second (both fetch and create/update/delete queries)
+which is good enough for lot of cases. 
+Even if you have 10k users, you will probably get no more than 10-50 requests per second in avg.
