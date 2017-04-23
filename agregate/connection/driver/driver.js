@@ -58,7 +58,7 @@ export class Driver {
         // todo bring nifty tricks to protect API from writing clauses
         const session = driver.session(readonly ? 'READ' : 'WRITE');
 
-        this.init = new Promise((res, rej) => {
+        const connectPromise = new Promise((res, rej) => {
             driver.onCompleted = () => res([driver, session]);
             driver.onError = (err) => {
                 logError(err);
@@ -75,12 +75,23 @@ export class Driver {
                         break;
                 }
             };
-        })
-            .then(([driver, session]) => {
+        });
+        const unlazyConnectionPromise = (async () => {
+            const now = Date.now();
+            const response = await driver.session().run('return {now}', {now});
+            if (response.records[0]._fields[0] !== now)
+                throw new Error('malconfigured connection occured');
+        })();
+
+        this.init = Promise.all([
+            connectPromise,
+            unlazyConnectionPromise,
+        ])
+            .then(([[driver, session]]) => {
                 this.driver = driver;
                 this.session = session;
                 logConnInit('Driver successfully initialized', this);
-            })
+            });
 
         // trick to disable default catch when any other .catch is executed
         this.init.catch(err => logError('connection error encountered for', host, auth, err));
