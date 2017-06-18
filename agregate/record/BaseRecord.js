@@ -51,7 +51,7 @@ export class BaseRecord {
 
   get __label(): string { return this.constructor.__label }
 
-  get __properties(): Object { return this.__node ? this.__node.properties : undefined }
+  get __properties(): ?Object { return this.__node ? this.__node.properties : void 0 }
 
   static indexed: string[] = [];
   static unique: Array<string[] | string> = [];
