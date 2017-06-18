@@ -1,1 +1,1 @@
-export {Relation} from './Relation'
+export { Relation } from './Relation'

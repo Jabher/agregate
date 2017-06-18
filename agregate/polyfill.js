@@ -1,2 +1,1 @@
-import 'babel-regenerator-runtime';
-import 'core-js/library/fn/reflect';
+import "core-js/library/fn/reflect";

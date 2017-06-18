@@ -1,2 +1,2 @@
 // @flow
-export {Driver} from './driver';
+export { Driver } from './driver';

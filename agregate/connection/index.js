@@ -1,2 +1,2 @@
 // @flow
-export {Connection} from './connection'
+export { Connection } from './connection'

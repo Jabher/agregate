@@ -1,7 +1,18 @@
 {
-  "presets": ["stage-2", "latest"],
+  "presets": [
+    "flow",
+    [
+      "env",
+      {
+        "targets": {
+          "node": 8
+        }
+      }
+    ]
+  ],
   "plugins": [
-    "transform-decorators-legacy", "transform-function-bind", "transform-class-properties",
-    "syntax-flow", "transform-flow-strip-types"
+    "transform-decorators-legacy",
+    "transform-object-rest-spread",
+    "transform-class-properties"
   ]
 }
