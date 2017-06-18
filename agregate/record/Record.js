@@ -5,6 +5,8 @@ import acceptsTransaction from "../util/acceptsTransaction";
 import { BaseRecord } from "./BaseRecord";
 import * as queryBuilder from "../util/queryBuilder";
 import * as R from "ramda";
+import { Var } from "../cypher/index";
+import { BaseRelation } from "../relation/BaseRelation";
 
 export class Record extends BaseRecord {
   static indexes = new Set();
@@ -16,13 +18,24 @@ export class Record extends BaseRecord {
   }
 
   @acceptsTransaction
-  static async where(params, opts) {
-    const results = await this.connection.query(C.tag`
-        MATCH ${
-      this.__selfQuery('entry')}
-        ${queryBuilder.whereQuery('entry', params)}
-        RETURN entry
-        ${queryBuilder.whereOpts('entry', opts)}`);
+  static async where(query: Object = {}, opts) {
+    const $params = Array.isArray(query) ? query.filter(q => !(q instanceof BaseRelation)) : query.$params || query;
+    const $relations = Array.isArray(query) ? query.filter(q => q instanceof BaseRelation) : query.$relations || [];
+
+    delete $params.$relations;
+
+    const entry = new Var();
+    const results = await this.connection.query(
+      $relations.reduce(
+        (acc, relation) => C.tag`
+        ${relation.__namedSelfQuery(new Var(), new Var(), entry)}
+        ${acc}
+        `, C.tag`
+        ${this.__namedSelfQuery(entry)}
+        ${queryBuilder.whereQuery(entry, $params)}
+        RETURN ${entry}
+        ${queryBuilder.whereOpts(entry, opts)}
+        `));
     return R.transpose(results)[0] || [];
   }
 
@@ -44,7 +57,7 @@ export class Record extends BaseRecord {
     const newRecord = new this(params);
 
     return await newRecord
-      //$FlowFixMe
+    //$FlowFixMe
       .save(this.connection);
   }
 }

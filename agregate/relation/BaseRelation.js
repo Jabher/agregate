@@ -1,5 +1,5 @@
 // @flow
-import { Cypher as C } from "../cypher";
+import { Cypher as C, Var } from "../cypher";
 import checkRecordExistence from "../util/checkRecordExistence";
 import { Record } from "../record";
 import { Connection } from "../connection";
@@ -28,22 +28,31 @@ export class BaseRelation {
     })
   }
 
-  __rel(varName: string = '') {
-    return C.raw(`${this.fromRel}[${varName}:${this.label}]${this.toRel}`)
+  __rel(varName: Var = new Var()) {
+    return C.tag`${C.raw(this.fromRel)}[${varName}:${C.raw(this.label)}]${C.raw(this.toRel)}`;
   }
 
-  __selfQuery(sourceName: string = '') {
-    return C.tag`${this.__source(sourceName)}${this.__rel('')}${this.__target('')}`
+  __selfQuery(sourceName: Var) {
+    const target = this.targetLabel ? C.tag`(:${C.raw(this.targetLabel)})` : C.tag`()`;
+    return C.tag`${this.__source(sourceName)}${this.__rel()}${target}`;
   }
 
-  __namedSelfQuery(sourceName: string = '', varName: string = '', targetName: string = '') {
-    return C.tag`MATCH ${this.__source(sourceName)}${this.__rel(varName)}${this.__target(targetName)}`
+  __namedSelfQuery(source: Var, varName: Var = new Var(), targetName: Var = new Var()) {
+    const target = this.targetLabel ? C.tag`(${targetName}:${C.raw(this.targetLabel)})` : C.tag`(${targetName})`;
+    const intermediate = new Var();
+    return C.tag`
+    ${
+      this.source instanceof BaseRelation
+        ? this.source.__namedSelfQuery(source, new Var(), intermediate)
+        : this.source.__namedSelfQuery(intermediate)
+      }
+    MATCH (${intermediate})${this.__rel(varName)}${target}`
   }
 
-  __source(varName: string = '') { return this.source.__selfQuery(varName) }
+  __source(varName: Var) { return this.source.__selfQuery(varName) }
 
-  __target(varName: string = '', params: Object = {}) {
-    const key = C.raw(this.targetLabel ? `${varName}:${this.targetLabel}` : varName)
+  __target(varName: Var, params: Object = {}) {
+    const key = this.targetLabel ? C.tag`${varName}:${C.raw(this.targetLabel)}` : varName
     if (Object.keys(params).length === 0) {return C.tag`(${key})`} else {return C.tag`(${key} {${C.literal(params)}})`}
   }
 

@@ -8,6 +8,7 @@ import { Relation } from "../relation/";
 import * as R from "ramda";
 import { v1 as neo4j } from "neo4j-driver";
 import { Connection } from "../connection";
+import { Var } from "../cypher/index";
 
 export const reflections: WeakMap<BaseRecord, neo4j.types.Node> = new WeakMap();
 export const unassignablePropertiesCache: WeakMap<Class<BaseRecord>, string[]> = new WeakMap();
@@ -122,22 +123,28 @@ export class BaseRecord {
       return this.__properties.updatedAt;
   }
 
-  static __selfQuery(key: string, query: Query): C {
+  static __selfQuery(key: Var, query: Query): C {
     return query
-      ? C.tag`(${C.raw(key)}:${C.raw(this.__label)} {${C.literal(query)}})`
-      : C.tag`(${C.raw(key)}:${C.raw(this.__label)})`
+      ? C.tag`(${key}:${C.raw(this.__label)} {${C.literal(query)}})`
+      : C.tag`(${key}:${C.raw(this.__label)})`
   }
 
-  __selfQuery(key: string, query?: Query) {
+  static __namedSelfQuery(key: Var, query: Query): C {
+    return C.tag`MATCH ${query
+      ? C.tag`(${key}:${C.raw(this.__label)} {${C.literal(query)}})`
+      : C.tag`(${key}:${C.raw(this.__label)})`}`
+  }
+
+  __selfQuery(key: Var, query?: Query) {
     checkRecordExistence(this);
 
     return this.constructor.__selfQuery(key, query || { uuid: this.uuid })
   }
 
 
-  __namedSelfQuery(key: string) {
+  __namedSelfQuery(key: Var) {
     checkRecordExistence(this);
-    return C.tag`MATCH ${this.constructor.__selfQuery(key, { uuid: this.uuid })}`
+    return this.constructor.__namedSelfQuery(key, { uuid: this.uuid })
   }
 
   toJSON(): Object {
@@ -179,18 +186,18 @@ export class BaseRecord {
     Reflect.setPrototypeOf(tempRecord, this);
 
     await (isUpdating ? tempRecord.beforeUpdate() : tempRecord.beforeCreate());
-    const entryName = 'entry';
+    const entryName = new Var();
     const requestContent = isUpdating
 
       ? C.tag`${tempRecord.__namedSelfQuery(entryName)}
-                        SET ${C.raw(entryName)} += ${tempRecord.serialize()}, ${C.raw(entryName)}.updatedAt = timestamp()`
-      : C.tag`CREATE (${C.raw(entryName)}:${C.raw(tempRecord.__label)})
-                        SET ${C.raw(entryName)} += ${tempRecord.serialize()},
-                            ${C.raw(entryName)}.createdAt = timestamp(),
-                            ${C.raw(entryName)}.updatedAt = timestamp(),
-                            ${C.raw(entryName)}.uuid = ${uuid.v4()}`;
+                        SET ${entryName} += ${tempRecord.serialize()}, ${entryName}.updatedAt = timestamp()`
+      : C.tag`CREATE (${entryName}:${C.raw(tempRecord.__label)})
+                        SET ${entryName} += ${tempRecord.serialize()},
+                            ${entryName}.createdAt = timestamp(),
+                            ${entryName}.updatedAt = timestamp(),
+                            ${entryName}.uuid = ${uuid.v4()}`;
 
-    const [[entry]] = await transaction.query(C.tag`${requestContent} RETURN entry`);
+    const [[entry]] = await transaction.query(C.tag`${requestContent} RETURN ${entryName}`);
 
     const node = entry instanceof BaseRecord ? entry.__node : entry;
 
@@ -228,9 +235,11 @@ export class BaseRecord {
 
     await tempRecord.beforeDestroy();
 
+    const entry = new Var();
+
     await transaction.query(C.tag`
-                ${tempRecord.__namedSelfQuery('entry')}
-                DETACH DELETE entry`);
+                ${tempRecord.__namedSelfQuery(entry)}
+                DETACH DELETE ${entry}`);
     await tempRecord.afterDestroy();
 
     this.__node = undefined;

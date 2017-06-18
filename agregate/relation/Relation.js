@@ -1,6 +1,6 @@
 // @flow
 import "../polyfill";
-import { Cypher as C } from "../cypher";
+import { Cypher as C, Var } from "../cypher";
 import { BaseRelation } from "./BaseRelation";
 
 import * as queryBuilder from "../util/queryBuilder";
@@ -22,21 +22,24 @@ export class Relation extends BaseRelation {
   @acceptsTransaction
   @acceptsRecords
   async has(records: Record[]) {
+    const relation = new Var();
+    const target = new Var();
     return (await this.connection.query(C.tag`
-            ${this.__namedSelfQuery('', 'relation', 'target')}
-                WHERE target.uuid IN ${records.map(record => record.uuid)}
+            ${this.__namedSelfQuery(new Var(), relation, target)}
+                WHERE ${target}.uuid IN ${records.map(record => record.uuid)}
 
-            RETURN count(relation) = ${records.length} as exists`))[0][0]
+            RETURN count(${relation}) = ${records.length} as exists`))[0][0]
   }
 
   @acceptsTransaction
   @acceptsRecords
   async intersect(records: Record[]) {
+    const target = new Var();
     return R.transpose(await this.connection.query(C.tag`
-            ${this.__namedSelfQuery('', '', 'target')}
-                WHERE target.uuid IN ${records.map(record => record.uuid)}
+            ${this.__namedSelfQuery(new Var(), new Var(), target)}
+                WHERE ${target}.uuid IN ${records.map(record => record.uuid)}
 
-            RETURN target`))[0]
+            RETURN ${target}`))[0]
   }
 
   @acceptsTransaction
@@ -44,12 +47,16 @@ export class Relation extends BaseRelation {
   async add(records: Record[]) {
     if (this.source instanceof Relation) {throw new TypeError('cannot add entries to meta-relation due to uncertainty')}
 
-    await this.connection.query(C.tag`
-            MATCH ${this.__source('source')}
-            MATCH ${this.__target('target')}
-                WHERE target.uuid IN ${records.map(record => record.uuid)}
+    const source = new Var();
+    const target = new Var();
+    const relation = new Var();
 
-            MERGE (source)${this.__rel('relation')}(target)`)
+    await this.connection.query(C.tag`
+            MATCH ${this.__source(source)}
+            MATCH ${this.__target(target)}
+                WHERE ${target}.uuid IN ${records.map(record => record.uuid)}
+
+            MERGE (${source})${this.__rel(relation)}(${target})`)
   }
 
   // noinspection ReservedWordAsName - relation is trying to re-use Set API
@@ -57,40 +64,54 @@ export class Relation extends BaseRelation {
   @acceptsTransaction
   @acceptsRecords
   async delete(records: Record[]) {
+    const source = new Var();
+    const target = new Var();
+    const relation = new Var();
     await this.connection.query(C.tag`
-            ${this.__namedSelfQuery('', 'relation', 'target')}
-                WHERE target.uuid IN ${records.map(record => record.uuid)}
+            ${this.__namedSelfQuery(source, relation, target)}
+                WHERE ${target}.uuid IN ${records.map(record => record.uuid)}
 
-            DELETE relation`)
+            DELETE ${relation}`)
   }
 
   @acceptsTransaction
   async clear() {
+    const source = new Var();
+    const target = new Var();
+    const relation = new Var();
     await this.connection.query(C.tag`
-            ${this.__namedSelfQuery('', 'relation', '')}
+            ${this.__namedSelfQuery(source, relation, target)}
 
-            DELETE relation`)
+            DELETE ${relation}`)
   }
 
   @acceptsTransaction
   async size(): Promise<number> {
-    const [[relationCount]] = await this.connection.query(C.tag`
-            ${this.__namedSelfQuery('', 'relation', '')}
+    const source = new Var();
+    const target = new Var();
+    const relation = new Var();
 
-            RETURN count(relation) as relationCount`)
+    const [[relationCount]] = await this.connection.query(C.tag`
+            ${this.__namedSelfQuery(source, relation, target)}
+
+            RETURN count(${relation}) as relationCount`)
     return relationCount;
   }
 
   @acceptsTransaction
-  entries() { return this.where(undefined, undefined) }
+  entries() { return this.where() }
 
   @acceptsTransaction
-  async where(params: ?Object, opts: ?Object) {
+  async where(params: {} | {}[] = {}, opts: { order?: string | string[], offset?: number, limit?: number } = {}) {
+    const source = new Var();
+    const target = new Var();
+    const relation = new Var();
+
     const result = await this.connection.query(C.tag`
-            ${this.__namedSelfQuery('', '', 'target')}
-            ${queryBuilder.whereQuery('target', params)}
-            RETURN target
-            ${queryBuilder.whereOpts('target', opts)}`);
+            ${this.__namedSelfQuery(source, relation, target)}
+            ${queryBuilder.whereQuery(target, params)}
+            RETURN ${target}
+            ${queryBuilder.whereOpts(target, opts)}`);
 
     return R.transpose(result)[0] || [];
   }

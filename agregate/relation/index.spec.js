@@ -49,6 +49,23 @@ describe('Agregate Relation', () => {
         expect(await object.subjects.size()).to.be.equal(1)
       })
     })
+    describe('querying', () => {
+      it('should support empty $relation queries', async () => {
+        expect(await TestSubject.where({$relations: [
+          object.subjects
+        ]})).to.have.length(0)
+      })
+      it('should support $relation queries', async () => {
+        await object.subjects.add(await TestSubject.where({ uuid: subject.uuid }))
+        expect(await TestSubject.where({$relations: [
+          object.subjects
+        ]})).to.have.length(1)
+      })
+      it('should support shorthand syntax', async () => {
+        await object.subjects.add(await TestSubject.where({ uuid: subject.uuid }))
+        expect(await TestSubject.where([object.subjects])).to.have.length(1)
+      })
+    })
     describe('manipulations', () => {
       beforeEach(async () =>
         await object.subjects.add(subject))

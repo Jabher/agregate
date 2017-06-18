@@ -1,29 +1,29 @@
 // @flow
-import { Cypher } from "../cypher";
+import { Cypher as C, Var } from "../cypher";
 
 const whereQueries = {
-  $gt: (key, val) => Cypher.tag`${key}>${val}`,
-  $gte: (key, val) => Cypher.tag`${key}>=${val}`,
-  $lt: (key, val) => Cypher.tag`${key}<${val}`,
-  $lte: (key, val) => Cypher.tag`${key}<=${val}`,
-  $exists: (key, val) => val ? Cypher.tag`exists(${key})` : Cypher.tag`NOT exists(${key})`,
-  $startsWith: (key, val) => Cypher.tag`${key} STARTS WITH ${val}`,
-  $endsWith: (key, val) => Cypher.tag`${key} ENDS WITH ${val}`,
-  $contains: (key, val) => Cypher.tag`${key} CONTAINS ${val}`,
-  $has: (key, val) => Cypher.tag`${val} IN ${key}`,
-  $in: (key, val) => Cypher.tag`${key} IN ${val}`
+  $gt: (key, val) => C.tag`${key}>${val}`,
+  $gte: (key, val) => C.tag`${key}>=${val}`,
+  $lt: (key, val) => C.tag`${key}<${val}`,
+  $lte: (key, val) => C.tag`${key}<=${val}`,
+  $exists: (key, val) => val ? C.tag`exists(${key})` : C.tag`NOT exists(${key})`,
+  $startsWith: (key, val) => C.tag`${key} STARTS WITH ${val}`,
+  $endsWith: (key, val) => C.tag`${key} ENDS WITH ${val}`,
+  $contains: (key, val) => C.tag`${key} CONTAINS ${val}`,
+  $has: (key, val) => C.tag`${val} IN ${key}`,
+  $in: (key, val) => C.tag`${key} IN ${val}`
 };
 
 const { isArray } = Array;
 
-export function buildQuery(varKey: string, params: {[string]: any} = {}): Cypher[] {
+export function buildQuery(varKey: Var, params: { [string]: any } = {}): C[] {
   const keys = Object.keys(params);
   if (keys.length === 0) {
     return []
   }
 
   return keys
-    .map(key => [Cypher.raw(`${varKey}.${key}`), params[key]])
+    .map(key => [C.tag`${varKey}.${C.raw(key)}`, params[key]])
     .map(([token, param]) =>
       (param instanceof Object) && !Array.isArray(param)
         ? Object.keys(param)
@@ -36,17 +36,17 @@ export function buildQuery(varKey: string, params: {[string]: any} = {}): Cypher
             ? param[key].map(val => whereQueries[key](token, val))
             : whereQueries[key](token, param[key]))
         .reduce((a, b) => a.concat(b), [])
-        : Cypher.tag`${token} = ${param}`)
+        : C.tag`${token} = ${param}`)
     .reduce((a, b) => a.concat(b), [])
 }
 
 const wrapQuery = query => query
-  .reduce((acc, query) => acc ? Cypher.tag `${acc} AND ${query}` : Cypher.tag`${query}`, null);
+  .reduce((acc, query) => acc ? C.tag `${acc} AND ${query}` : C.tag`${query}`, null);
 
-export function whereQuery(varKey: string, params: {} | {}[] = {}): Cypher {
+export function whereQuery(varKey: Var, params: {} | {}[] = {}): C {
   if (Array.isArray(params)) {
     if (params.length === 0) {
-      return Cypher.tag``;
+      return C.tag``;
     }
 
     if (params.length === 1) {
@@ -54,33 +54,39 @@ export function whereQuery(varKey: string, params: {} | {}[] = {}): Cypher {
     }
 
     return params
-      .map(query => buildQuery(varKey, query))
-      .filter(builtQuery => builtQuery.length > 0)
-      .map(wrapQuery)
-      .reduce((acc, query) => acc ? Cypher.tag`${acc} OR (${query})` : Cypher.tag`WHERE (${query})`, null)
-      || Cypher.tag``;
+        .map(query => buildQuery(varKey, query))
+        .filter(builtQuery => builtQuery.length > 0)
+        .map(wrapQuery)
+        .reduce((acc, query) => acc ? C.tag`${acc} OR (${query})` : C.tag`WHERE (${query})`, null)
+      || C.tag``;
   }
 
   const query = buildQuery(varKey, params);
   if (query.length === 0)
-    return Cypher.tag``;
+    return C.tag``;
 
-  return Cypher.tag`WHERE ${wrapQuery(query)}`;
+  return C.tag`WHERE ${wrapQuery(query)}`;
 }
 
-export const whereOpts = (varKey: string, opts: {order?: string | string[], offset?: number, limit?: number} = {}) =>
-  Cypher.tag`
+export const whereOpts = (varKey: Var, opts: { order?: string | string[], offset?: number, limit?: number } = {}) =>
+  C.tag`
         ${order(varKey, opts.order)}
         ${offset(varKey, opts.offset)}
         ${limit(varKey, opts.limit)}`;
 
-export const order = (varKey: string, value: void | string | string[]) =>
-  value && !Array.isArray(value)
-    ? order(varKey, [value])
-    : Cypher.raw(value ? `ORDER BY ${value.map(orderEntity => `${varKey}.${orderEntity}`).join(',')}` : '');
+export const order = (varKey: Var, value: void | string | string[]) => {
+  if (!Array.isArray(value)) {
+    return order(varKey, value ? [value] : []);
+  }
+  return value
+      .filter(a => a)
+      .map(orderEntity => C.tag`${varKey}.${C.raw(orderEntity)}`)
+      .reduce((acc, tag) => acc ? C.tag`${acc}, ${tag}` : C.tag`ORDER BY ${tag}`, null)
+    || C.tag``;
+}
 
-export const offset = (varKey: string, value: ?number) =>
-  Cypher.raw(value ? `SKIP ${value}` : '');
+export const offset = (varKey: Var, value: ?number) =>
+  C.raw(value ? `SKIP ${value}` : '');
 
-export const limit = (varKey: string, value: ?number) =>
-  Cypher.raw(value ? `LIMIT ${value}` : '');
+export const limit = (varKey: Var, value: ?number) =>
+  C.raw(value ? `LIMIT ${value}` : '');

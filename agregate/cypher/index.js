@@ -4,7 +4,7 @@ import type { DBPrimitive, Query } from "../types";
 const getResults = (getKey, strings, values): Query[] =>
   values
     .map((value, index) =>
-      (value instanceof Cypher || value instanceof Cypher.Raw)
+      (value && value.getRawQuery)
         ? value.getRawQuery(`${getKey(index)}_`)
         : { statement: `{${getKey(index)}}`, parameters: { [getKey(index)]: value } })
     .map(({ statement, parameters }, index) =>
@@ -28,6 +28,29 @@ class Raw {
   getRawQuery() { return { statement: this.string } }
 }
 
+export class Var {
+  static sessionId: number;
+  static nameMap: WeakMap<Var, string>;
+
+  static resetSession() {
+    this.nameMap = new WeakMap();
+    this.sessionId = 0
+  }
+
+  get name(): string {
+    const cachedValue = this.constructor.nameMap.get(this);
+    if (cachedValue)
+      return cachedValue;
+    const name = 'v' + this.constructor.sessionId++;
+    this.constructor.nameMap.set(this, name);
+    return name;
+  }
+
+  getRawQuery() {
+    return { statement: this.name };
+  }
+}
+
 export class Cypher {
   static defaultPrefix = 'v'
 
@@ -46,7 +69,10 @@ export class Cypher {
 
   constructor(strings: string[], values: DBPrimitive[]) { Object.assign(this, { strings, values }) }
 
-  toJSON() { return this.getRawQuery() }
+  toJSON() {
+    Var.resetSession();
+    return this.getRawQuery()
+  }
 
   getRawQuery(prefix: string = Cypher.defaultPrefix) {
 
