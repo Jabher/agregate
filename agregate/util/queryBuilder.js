@@ -15,8 +15,8 @@ const whereQueries = {
 
 const { isArray } = Array
 
-export function whereQuery(varKey, params = {}) {
-  const keys = Object.keys(params)
+export function buildQuery(varKey, params = {}) {
+  const keys = Object.keys(params);
   if (keys.length === 0) {return Cypher.raw('')}
 
   return keys
@@ -35,7 +35,25 @@ export function whereQuery(varKey, params = {}) {
         .reduce((a, b) => a.concat(b), [])
         : Cypher.tag`${token} = ${param}`)
     .reduce((a, b) => a.concat(b), [])
-    .reduce((acc, query) => acc ? Cypher.tag`${acc} AND ${query}` : Cypher.tag`WHERE ${query}`, null)
+    .reduce((acc, query) => acc ? Cypher.tag `${acc} AND ${query}` : Cypher.tag`${query}`, null)
+}
+
+export function whereQuery(varKey, params = {}) {
+  if (Array.isArray(params)) {
+    if (params.length === 0) {
+      return Cypher.tag``;
+    }
+
+    if (params.length === 1) {
+      return whereQuery(varKey, params[0]);
+    }
+
+    return params
+      .map(query => buildQuery(varKey, query))
+      .reduce((acc, query) => acc ? Cypher.tag`${acc} OR (${query})` : Cypher.tag`WHERE (${query})`, null);
+  }
+
+  return Cypher.tag`WHERE ${buildQuery(varKey, params)}`;
 }
 
 export const whereOpts = (varKey, opts = {}) =>

@@ -185,8 +185,25 @@ describe('Agregate Record', () => {
       it('should support multiple $in', async () =>
         expect(await Test.where({ test2: { $in: [[1, 1, 1, 5, 5], [1, 2, 2, 4, 4]] } })).to.have.length(1)
           .and.to.have.deep.property('[0].test2', 1))
+    });
+    describe('ORs', () => {
+      cleanBeforeEach();
+
+      beforeEach(async () => await Test.save(
+        { test1: 1, test2: 1 },
+        { test1: 2, test2: 2 },
+        { test1: 3, test2: 3 }
+      ));
+
+
+      it('should match same case', async () =>
+        expect(await Test.where([{ test1: 2 }, { test2: 2 }])).to.have.length(1)
+          .and.to.have.deep.property('[0].test2', 2));
+      it('should match different cases', async () =>
+        expect(await Test.where([{ test1: 1 }, { test2: 2 }])).to.have.length(2));
     })
-  })
+  });
+
   describe('hooks', () => {
     let testRecord
     beforeEach(() =>

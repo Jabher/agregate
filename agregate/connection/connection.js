@@ -4,7 +4,7 @@ import { Driver } from "./driver";
 import { Record } from "../record";
 import { Relation } from "../relation";
 import { Cypher as C } from "../cypher";
-import debug from "debug";
+// import debug from "debug";
 import { v1 as neo4j } from "neo4j-driver";
 import * as R from "ramda";
 
@@ -13,7 +13,7 @@ type ConnectionInit = {
   password: string;
 }
 
-const log = debug('Agregate:Connection');
+// const log = debug('Agregate:Connection');
 
 
 export class Connection extends Driver {
