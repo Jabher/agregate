@@ -134,6 +134,12 @@ export class BaseRecord {
     return this.constructor.__selfQuery(key, query || { uuid: this.uuid })
   }
 
+
+  __namedSelfQuery(key: string) {
+    checkRecordExistence(this);
+    return C.tag`MATCH ${this.constructor.__selfQuery(key, { uuid: this.uuid })}`
+  }
+
   toJSON(): Object {
     const dump = this.serialize();
     dump.uuid = this.uuid;
@@ -176,7 +182,7 @@ export class BaseRecord {
     const entryName = 'entry';
     const requestContent = isUpdating
 
-      ? C.tag`MATCH ${tempRecord.__selfQuery(entryName)}
+      ? C.tag`${tempRecord.__namedSelfQuery(entryName)}
                         SET ${C.raw(entryName)} += ${tempRecord.serialize()}, ${C.raw(entryName)}.updatedAt = timestamp()`
       : C.tag`CREATE (${C.raw(entryName)}:${C.raw(tempRecord.__label)})
                         SET ${C.raw(entryName)} += ${tempRecord.serialize()},
@@ -223,7 +229,7 @@ export class BaseRecord {
     await tempRecord.beforeDestroy();
 
     await transaction.query(C.tag`
-                MATCH ${tempRecord.__selfQuery('entry')}
+                ${tempRecord.__namedSelfQuery('entry')}
                 DETACH DELETE entry`);
     await tempRecord.afterDestroy();
 

@@ -10,6 +10,7 @@ export default function acceptsTransaction(target: Object, name: string, desc: O
   const fn = desc.value;
 
   desc.value = async function (...args) {
+    log('calling', name, ...args, this);
     const defineConnection = conn => Object.defineProperty(this, 'connection', { configurable: true, value: conn });
 
     const transactionPassed = args.length > 0 && isTransaction(R.last(args) || {});
