@@ -14,9 +14,9 @@ describe('performance-based matters', () => {
     await Test.register();
   });
 
-  it('should provide satisfying performance on 50 parallel create queries per second or higher', async () => {
-    await Promise.all(R.range(0, 1000).map((i) => new Test({ i }).save()));
-  }).timeout(20000);
+  // it('should provide satisfying performance on 50 parallel create queries per second or higher', async () => {
+  //   await Promise.all(R.range(0, 1000).map((i) => new Test({ i }).save()));
+  // }).timeout(20000);
 
   it('should provide satisfying performance on 50 sequential create queries per second or higher', async () => {
     for (const i of R.range(0, 1000)) {
