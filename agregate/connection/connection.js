@@ -102,29 +102,29 @@ export class Connection extends Driver {
 
     const metadata = await this.__Metadata.firstOrInitialize({ nodeName: klass.__label }, tx);
 
-    for (const label of R.difference(metadata.indices, indices)) {
-      await tx.query(C.tag`DROP INDEX ON (entity:${C.raw(label)})`);
+    for (const key of R.difference(metadata.indices, indices)) {
+      await tx.query(C.tag`DROP INDEX ON :${C.raw(label)}(${C.raw(key)})`);
     }
-    for (const label of R.difference(indices, metadata.indices)) {
-      await tx.query(C.tag`CREATE INDEX ON (entity:${C.raw(label)})`);
+    for (const key of R.difference(indices, metadata.indices)) {
+      await tx.query(C.tag`CREATE INDEX ON :${C.raw(label)}(${C.raw(key)})`);
     }
-    for (const label of R.difference(metadata.uniquenessConstraints, uniquenessConstraints)) {
-      await tx.query(C.tag`DROP CONSTRAINT ON (entity:${C.raw(label)}) ASSERT entity.uuid IS UNIQUE`);
+    for (const key of R.difference(metadata.uniquenessConstraints, uniquenessConstraints)) {
+      await tx.query(C.tag`DROP CONSTRAINT ON (entity:${C.raw(label)}) ASSERT entity.${C.raw(key)} IS UNIQUE`);
     }
-    for (const label of R.difference(uniquenessConstraints, metadata.uniquenessConstraints)) {
-      await tx.query(C.tag`CREATE CONSTRAINT ON (entity:${C.raw(label)}) ASSERT entity.uuid IS UNIQUE`);
+    for (const key of R.difference(uniquenessConstraints, metadata.uniquenessConstraints)) {
+      await tx.query(C.tag`CREATE CONSTRAINT ON (entity:${C.raw(label)}) ASSERT entity.${C.raw(key)} IS UNIQUE`);
     }
-    for (const label of R.difference(metadata.nodeKeyConstraints, nodeKeyConstraints)) {
-      await tx.query(C.tag`DROP CONSTRAINT ON (entity:${C.raw(label)}) ASSERT (${C.raw(label.sort().map(i => `value.${i}`).join(','))}) IS NODE KEY`);
+    for (const key of R.difference(metadata.nodeKeyConstraints, nodeKeyConstraints)) {
+      await tx.query(C.tag`DROP CONSTRAINT ON (entity:${C.raw(label)}) ASSERT (${C.raw(key.sort().map(i => `value.${i}`).join(','))}) IS NODE KEY`);
     }
-    for (const label of R.difference(nodeKeyConstraints, metadata.nodeKeyConstraints)) {
-      await tx.query(C.tag`CREATE CONSTRAINT ON (entity:${C.raw(label)}) ASSERT (${C.raw(label.sort().map(i => `value.${i}`).join(','))}) IS NODE KEY`);
+    for (const key of R.difference(nodeKeyConstraints, metadata.nodeKeyConstraints)) {
+      await tx.query(C.tag`CREATE CONSTRAINT ON (entity:${C.raw(label)}) ASSERT (${C.raw(key.sort().map(i => `value.${i}`).join(','))}) IS NODE KEY`);
     }
-    for (const label of R.difference(metadata.existenceConstraints, existenceConstraints)) {
-      await tx.query(C.tag`DROP CONSTRAINT ON (entity:${C.raw(label)}) ASSERT exists(value.${C.raw(label)})`);
+    for (const key of R.difference(metadata.existenceConstraints, existenceConstraints)) {
+      await tx.query(C.tag`DROP CONSTRAINT ON (entity:${C.raw(label)}) ASSERT exists(value.${C.raw(key)})`);
     }
-    for (const label of R.difference(existenceConstraints, metadata.existenceConstraints)) {
-      await tx.query(C.tag`CREATE CONSTRAINT ON (entity:${C.raw(label)}) ASSERT exists(value.${C.raw(label)})`);
+    for (const key of R.difference(existenceConstraints, metadata.existenceConstraints)) {
+      await tx.query(C.tag`CREATE CONSTRAINT ON (entity:${C.raw(label)}) ASSERT exists(value.${C.raw(key)})`);
     }
 
     Object.assign(metadata, {
