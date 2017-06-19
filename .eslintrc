@@ -4,7 +4,7 @@
   "env": {
     "es6": true,
     "shared-node-browser": true,
-    "mocha": true
+    "jest": true
   },
   "globals": {
     "Class": true

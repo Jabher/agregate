@@ -37,7 +37,7 @@ class Entry extends Record {
     //indexes are optional static properties 
     //which are used only for making DB query 'CREATE INDEX' during register() call. 
     static indexes = new Set('foo', 'bar')
-    //for now agregate is backed by npmjs.com/package/neo4j,
+    _agregate
     //so Connection constructor is just proxying everything up to that package. 
     //You can usually just use URL string syntax.
     //static properties are inheritable, so you only need to declare in once in parent class

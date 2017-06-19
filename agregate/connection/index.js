@@ -1,2 +1,3 @@
-// @flow
-export { Connection } from './connection'
+//@flow
+
+export class Connection {}
