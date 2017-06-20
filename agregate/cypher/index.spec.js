@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { Cypher } from "./index";
+import { Cypher, Var } from "./index";
 
 describe('Cypher Query agregate', () => {
   it('should create query', () => {
@@ -29,6 +29,16 @@ describe('Cypher Query agregate', () => {
       .to.deep.equal({
       statement: `test{${Cypher.defaultPrefix}0_0}`,
       parameters: { [`${Cypher.defaultPrefix}0_0`]: arr }
+    })
+  })
+  it('should create query with array spread', () => {
+    const arr = ['test', Cypher.tag`{${new Var()}}`, Cypher.raw('raw')]
+    expect((Cypher.tag`test${Cypher.spread(arr)}`).toJSON())
+      .to.deep.equal({
+      "parameters": {
+        "v0_0_0_1": "test"
+      },
+      "statement": "test{v0_0_0_1}{s0}raw"
     })
   })
 })

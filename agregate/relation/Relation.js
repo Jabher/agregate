@@ -17,7 +17,15 @@ export class Relation extends BaseRelation {
     }
   }
 
-  get boundOnly(): Function { return this.only.bind(this); }
+  get boundOnly(): Function {
+    const bound = this.only.bind(this);
+    bound.source = this.source;
+    bound.label = this.label;
+    bound.direction = this.direction;
+    bound.targetLabel = this.targetLabel;
+    bound.isOnly = true;
+    return bound;
+  }
 
   @acceptsTransaction
   @acceptsRecords

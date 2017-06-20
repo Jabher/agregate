@@ -41,7 +41,7 @@ export class Var {
     const cachedValue = this.constructor.nameMap.get(this);
     if (cachedValue)
       return cachedValue;
-    const name = 'v' + this.constructor.sessionId++;
+    const name = 's' + this.constructor.sessionId++;
     this.constructor.nameMap.set(this, name);
     return name;
   }
@@ -59,6 +59,8 @@ export class Cypher {
   static raw = string => new Cypher.Raw(string)
 
   static tag = (strings: string[], ...values: DBPrimitive[]) => new Cypher(strings, values)
+
+  static spread = (tags: any[]) => tags.reduce((acc, val) => Cypher.tag`${acc}${val}`, Cypher.tag``)
 
   static literal = (object, keys = Object.keys(object)) =>
     new Cypher([...keys.map(key => `${key}:`), ''], keys.map(key => object[key]))

@@ -37,9 +37,8 @@ export class BaseRelation {
     return C.tag`${this.__source(sourceName)}${this.__rel()}${target}`;
   }
 
-  __namedSelfQuery(source: Var, varName: Var = new Var(), targetName: Var = new Var()) {
+  __namedSelfQuery(source: Var, varName: Var = new Var(), targetName: Var = new Var(), intermediate: Var = new Var()) {
     const target = this.targetLabel ? C.tag`(${targetName}:${C.raw(this.targetLabel)})` : C.tag`(${targetName})`;
-    const intermediate = new Var();
     return C.tag`
     ${
       this.source instanceof BaseRelation

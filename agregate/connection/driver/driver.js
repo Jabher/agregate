@@ -1,9 +1,9 @@
 // @flow
-import "../../polyfill";
-import type { Query, QueryBuilder } from "../../types";
-import { v1 as neo4j } from "neo4j-driver";
-import * as R from "ramda";
-import debug from "debug";
+import '../../polyfill';
+import type { Query, QueryBuilder } from '../../types';
+import { v1 as neo4j } from 'neo4j-driver';
+import * as R from 'ramda';
+import debug from 'debug';
 
 const logError = debug('Agregate:ConnectionError');
 const logConnInit = debug('Agregate:ConnectionInitialized');
@@ -30,12 +30,12 @@ const rehydrationSession: {
   relations: neo4j.types.Relation[]
 } = {
   nodes: {},
-  relations: []
+  relations: [],
 };
 
 const resetRehydrationSession = () => Object.assign(rehydrationSession, {
   nodes: {},
-  relations: []
+  relations: [],
 });
 
 type Init = {
@@ -85,7 +85,7 @@ export class Driver {
 
     this.init = Promise.all([
       connectPromise,
-      unlazyConnectionPromise
+      unlazyConnectionPromise,
     ])
       .then(([[driver, session]]) => {
         this.driver = driver;
@@ -99,21 +99,35 @@ export class Driver {
 
   async close() {
     await this.init.catch(err => err);
-    if (this.session) {await new Promise(res => this.session.close(res));}
-    if (this.driver) {this.driver.close();}
+    if (this.session) {
+      await new Promise(res => this.session.close(res));
+    }
+    if (this.driver) {
+      this.driver.close();
+    }
   }
 
 
   rehydrate(value: any): any {
-    if (Array.isArray(value)) {return value.map(entry => this.rehydrate(entry));}
-    if (value instanceof neo4j.types.Node) {return this.rehydrateNode(value);}
-    if (value instanceof neo4j.types.Relationship) {return this.rehydrateRelation(value);}
-    if (neo4j.isInt(value)) {return value.toNumber();}
+    if (Array.isArray(value)) {
+      return value.map(entry => this.rehydrate(entry));
+    }
+    if (value instanceof neo4j.types.Node) {
+      return this.rehydrateNode(value);
+    }
+    if (value instanceof neo4j.types.Relationship) {
+      return this.rehydrateRelation(value);
+    }
+    if (neo4j.isInt(value)) {
+      return value.toNumber();
+    }
     return value;
   }
 
   dehydrate(value: any): any {
-    if (Array.isArray(value)) {return value.map(entry => this.dehydrate(entry));}
+    if (Array.isArray(value)) {
+      return value.map(entry => this.dehydrate(entry));
+    }
 
     return value;
   }
@@ -137,7 +151,7 @@ export class Driver {
     return {
       __type: 'relation',
       labels: [value.type],
-      properties: value.properties
+      properties: value.properties,
     };
   }
 
@@ -145,7 +159,7 @@ export class Driver {
     return {
       __type: 'node',
       labels: value.labels,
-      properties: value.properties
+      properties: value.properties,
     };
   }
 
@@ -160,7 +174,8 @@ export class Driver {
 
   async transaction() {
     await this.init;
-    let res: () => any = () => {};
+    let res: () => any = () => {
+    };
     const deferred = new Promise(resFn => res = resFn)
       .then(() => this.__transactionQueue = this.__transactionQueue.filter(val => val !== deferred));
 
@@ -201,8 +216,12 @@ class Transaction {
   async query(query: string | QueryBuilder | Query) {
     try {
 
-      if (typeof query === 'string') {return this.query({ statement: query });}
-      if (query.toJSON instanceof Function) {return this.query(query.toJSON());}
+      if (typeof query === 'string') {
+        return this.query({ statement: query });
+      }
+      if (query.toJSON instanceof Function) {
+        return this.query(query.toJSON());
+      }
 
       await this.__driver.init;
 
@@ -215,8 +234,12 @@ class Transaction {
       logQueryResult('server answered for', statement, 'with params:', dehydratedParameters);
       logQueryResult(response.summary);
       if (Array.isArray(response.records)) {
-        for (const record of response.records) {logQueryResult(record);}
-      } else {logQueryResult(response.records);}
+        for (const record of response.records) {
+          logQueryResult(record);
+        }
+      } else {
+        logQueryResult(response.records);
+      }
 
       const { records } = response;
       resetRehydrationSession();
@@ -224,8 +247,50 @@ class Transaction {
       const result = this.__driver.rehydrate(records.map(({ _fields }) => _fields));
       rehydrationSession.relations.forEach(rel => Object.assign(rel, {
         start: rehydrationSession.nodes[rel.start.toString(36)] || undefined,
-        end: rehydrationSession.nodes[rel.end.toString(36)] || undefined
+        end: rehydrationSession.nodes[rel.end.toString(36)] || undefined,
       }));
+
+      for (const { labels, start, end } of rehydrationSession.relations) {
+        if (!start || !end) {
+          continue
+        }
+
+        const startRelations = start.__relations
+        const endRelations = end.__relations
+
+        const startKeys = Object.keys(start)
+          .filter(key => start[key] && labels.includes(start[key].label) && start[key].direction >= 0)
+        const endKeys = Object.keys(end)
+          .filter(key => end[key] && labels.includes(end[key].label) && end[key].direction <= 0)
+
+        for (const label of labels) {
+          for (const key of startKeys) {
+            if (start[key].label === label) {
+              if (start[key].isOnly) {
+                startRelations[key] = end
+              } else {
+                if (!startRelations[key]) {
+                  startRelations[key] = []
+                }
+                startRelations[key].push(end)
+              }
+            }
+          }
+          for (const key of endKeys) {
+            if (end[key].label === label) {
+              if (end[key].isOnly) {
+                endRelations[key] = start
+              } else {
+                if (!endRelations[key]) {
+                  endRelations[key] = []
+                }
+                endRelations[key].push(start)
+              }
+            }
+          }
+        }
+      }
+
       logQueryResult(result);
       return result;
     } catch (e) {

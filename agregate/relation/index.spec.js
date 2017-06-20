@@ -65,6 +65,19 @@ describe('Agregate Relation', () => {
         await object.subjects.add(await TestSubject.where({ uuid: subject.uuid }))
         expect(await TestSubject.where([object.subjects])).to.have.length(1)
       })
+
+      it('support fetching related vals', async () => {
+        await object.subjects.add(subject)
+
+        const result = await TestSubject.where([object.subjects], {}, [object.subjects])
+
+        expect(result).to.have.length(1)
+        expect(result[0].__relations.objects).to.have.length(1)
+        expect(result[0].__relations.objects[0]).to.be.instanceof(TestObject)
+
+        const serialized = JSON.parse(JSON.stringify(result))
+        expect(serialized[0]).to.have.property("objects").that.deep.equals([object.toFlatJSON()])
+      })
     })
     describe('manipulations', () => {
       beforeEach(async () =>

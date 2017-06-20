@@ -30,6 +30,8 @@ const getPrototypeProperties = R.pipe(
   R.flatten
 );
 
+const relationMap = new WeakMap();
+
 export class BaseRecord {
   static get __unassignableProperties(): string[] {
     const cached = unassignablePropertiesCache.get(this);
@@ -47,6 +49,9 @@ export class BaseRecord {
 
   static connection: Connection;
   get connection(): Connection { return this.constructor.connection }
+
+  //$FlowFixMe
+  get __relations(): {[string]: BaseRecord[] | BaseRecord} { return relationMap.get(this) }
 
   static get __label(): string { return this.name }
 
@@ -85,6 +90,8 @@ export class BaseRecord {
 
   constructor(props: Object = {}, node?: neo4j.types.Node) {
     this.__assign(props);
+    relationMap.set(this, {});
+
     if (node) {
       this.__node = node;
     }
@@ -147,9 +154,20 @@ export class BaseRecord {
     return this.constructor.__namedSelfQuery(key, { uuid: this.uuid })
   }
 
-  toJSON(): Object {
+  toFlatJSON(): Object {
     const dump = this.serialize();
     dump.uuid = this.uuid;
+    return dump;
+  }
+
+  toJSON(): Object {
+    const dump = this.toFlatJSON();
+    const relations = this.__relations;
+    for (const key of Object.keys(relations)) {
+      dump[key] = Array.isArray(relations[key])
+        ? relations[key].map(rel => rel.toFlatJSON())
+        : relations[key].toFlatJSON();
+    }
     return dump;
   }
 
