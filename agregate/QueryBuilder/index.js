@@ -105,15 +105,15 @@ export class QueryBuilder {
       ${dropDescriptor.uniqueMulti.map(keys => C.tag`drop constraint on (entity:${C.raw(label)}) 
       assert (${C.raw(keys.map(i => `value.${i}`).join(","))}) is node key`)}
       
-      ${addDescriptor.unique.map(keys => C.tag`create constraint on (entity:${C.raw(label)}) 
-      assert (${C.raw(keys.map(i => `value.${i}`).join(","))}) is unique`)}
-      ${dropDescriptor.unique.map(keys => C.tag`drop constraint on (entity:${C.raw(label)}) 
-      assert (${C.raw(keys.map(i => `value.${i}`).join(","))}) is unique`)}
+      ${addDescriptor.unique.map(key => C.tag`create constraint on (entity:${C.raw(label)}) 
+      assert (${C.raw(key)}) is unique`)}
+      ${dropDescriptor.unique.map(key => C.tag`drop constraint on (entity:${C.raw(label)}) 
+      assert (${C.raw(key)}) is unique`)}
       
-      ${addDescriptor.exists.map(keys => C.tag`create constraint on (entity:${C.raw(label)}) 
-      assert exists(${C.raw(keys.map(i => `value.${i}`).join(","))}`)}
-      ${dropDescriptor.exists.map(keys => C.tag`drop constraint on (entity:${C.raw(label)}) 
-      assert exists(${C.raw(keys.map(i => `value.${i}`).join(","))}`)}
+      ${addDescriptor.exists.map(key => C.tag`create constraint on (entity:${C.raw(label)}) 
+      assert exists(${C.raw(key)}`)}
+      ${dropDescriptor.exists.map(key => C.tag`drop constraint on (entity:${C.raw(label)}) 
+      assert exists(${C.raw(key)}`)}
     `;
   }
 }

@@ -16,10 +16,6 @@ export class Collection implements ICollectionReference {
     return this._extend({ type: "where", clause })
   }
 
-  intersects(other: ICollectionReference) {
-    return this._extend({ type: "intersect", other })
-  }
-
   relates(
     other: ICollectionReference,
     relationLabel: ?string,
@@ -60,13 +56,5 @@ export class Collection implements ICollectionReference {
       clause: relationWhereClause,
       direction: -1
     })
-  }
-
-  order(...order: string[]) {
-    return this._extend({ type: "order", order })
-  }
-
-  subset(skip: number, limit: number) {
-    return this._extend({ type: "subset", skip, limit })
   }
 }

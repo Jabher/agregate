@@ -2,9 +2,13 @@
 
 export type primitive = string | boolean | number | null
 
-export type property = primitive | primitive[] | {[string]: primitive}
+export type property = primitive | primitive[] | { [string]: primitive }
 
 export type properties = { [string]: property }
+
+export type IEdgeId = number;
+
+export type INodeId = number;
 
 export interface IQuery {
   statement: string,
@@ -18,9 +22,9 @@ export interface IAbstractEdge<Node> {
   properties: properties
 }
 
-export interface ISerializableEdge extends IAbstractEdge<number> {}
+export interface ISerializableEdge extends IAbstractEdge<INodeId> {}
 
-export interface IEdge extends IAbstractEdge<IRecord> {
+export interface IEdge extends IAbstractEdge<INode> {
   label: string,
   properties: properties
 }
@@ -28,7 +32,7 @@ export interface IEdge extends IAbstractEdge<IRecord> {
 export interface IReflection<Value> {
   toJS(): Promise<Value>,
   toJSON(): Promise<{
-    nodes: ISerializedRecord[],
+    nodes: ISerializedNode[],
     relations: ISerializableEdge[]
   }>
 }
@@ -58,12 +62,12 @@ export interface IWhereClause {
 }
 
 export interface IAction {
-  tag: (...vars: {getRawQuery(): string}[]) => IQuery,
+  tag: (...vars: { getRawQuery(): string }[]) => IQuery,
   arguments: any[]
 }
 
 export interface IAgregate {
-  tag: (...vars: {getRawQuery(): string}[]) => IQuery,
+  tag: (...vars: { getRawQuery(): string }[]) => IQuery,
   arguments: any[]
 }
 
@@ -71,8 +75,9 @@ export interface IConstraintable {
   _constraints: IConstraint[]
 }
 
+// eslint-disable-next-line no-unused-vars
 export interface IReference<Result> {
-  tag: (v: {getRawQuery(): string}[]) => IQuery,
+  tag: (v: { getRawQuery(): string }[]) => IQuery,
 
   // run(connection: IConnection, actions: IAction[]): IReflection<Result>;
   // compile(actions: IAction[]): IQuery;
@@ -81,7 +86,6 @@ export interface IReference<Result> {
 export interface ICollectionReference
   extends IReference<INode[]>, IConstraintable {
   where(clause: IWhereClause): ICollectionReference,
-  intersects(collection: ICollectionReference): ICollectionReference,
   relates(collection: ICollectionReference,
           relationLabel: ?string,
           relationProperties: ?IWhereClause): ICollectionReference,
@@ -90,9 +94,7 @@ export interface ICollectionReference
             relationProperties: ?IWhereClause): ICollectionReference,
   relatesFrom(collection: ICollectionReference,
               relationLabel: ?string,
-              relationProperties: ?IWhereClause): ICollectionReference,
-  subset(skip: number, limit: number): ICollectionReference,
-  order(...order: string[]): ICollectionReference
+              relationProperties: ?IWhereClause): ICollectionReference
 }
 
 export interface ILabelRecordDescriptor {
@@ -108,20 +110,17 @@ export interface ILabelCollectionReference
   register(connection: IConnection): Promise<void>
 }
 
-export interface INode extends IReference<INode> {
+export interface IAbstractNode<Edge> extends IReference<INode> {
   collection: ILabelCollectionReference,
   label: string,
   properties: properties,
-  relationsFrom: IEdge[],
-  relationsTo: IEdge[]
+  relationsFrom: Edge[],
+  relationsTo: Edge[]
 }
 
-export interface IRecord {
-  node_: INode,
-  [string]: property
-}
+export interface INode extends IAbstractNode<IEdge> {}
 
-export interface ISerializedRecord {}
+export interface ISerializedNode extends IAbstractNode<IEdgeId> {}
 
 export type IConstraint =
   | { type: "label", label: string }
@@ -133,5 +132,9 @@ export type IConstraint =
   clause: ?IWhereClause
 }
   | { type: "where", clause: IWhereClause }
-  | { type: "order", order: string[] }
-  | { type: "subset", skip: number, limit: number }
+
+export interface INarrowing {
+  order: string[],
+  skip: number,
+  limit: number
+}

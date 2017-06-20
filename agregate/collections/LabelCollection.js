@@ -1,10 +1,9 @@
 // @flow
 
-import type { ILabelCollectionReference } from "../types"
+import type { ICollectionReference, IConnection, ILabelCollectionReference } from "../types"
 import { Collection } from "../base/Collection"
 
-export class LabelCollection extends Collection
-  implements ILabelCollectionReference {
+export class LabelCollection extends Collection {
   static get label() {
     return this.name
   }
@@ -13,7 +12,7 @@ export class LabelCollection extends Collection
     return this.constructor.label
   }
 
-  async register(connection: ICollectionReference) {}
+  async register(connection: IConnection) {}
   // reflectedState: IReflection<INode>;
 
   unique: ?(string[])
