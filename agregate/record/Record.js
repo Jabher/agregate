@@ -24,7 +24,7 @@ export class Record extends BaseRecord {
 
         delete $params.$relations;
 
-        const entry = new Var();
+        const target = new Var();
 
         const returningRelationVars = []
         const relationVars = $relations.map(relation => {
@@ -34,20 +34,17 @@ export class Record extends BaseRecord {
                 returningRelationVars.push(pointer)
                 returningRelationVars.push(relationPointer)
             }
-            return relation.__namedSelfQuery(new Var(), relationPointer, entry, pointer)
+            return relation.__namedSelfQuery(new Var(), relationPointer, target, pointer)
         })
 
-        const results = await this.connection.query(
-            relationVars.reduce(
-                (acc, relation) => C.tag`
-        ${relation}
-        ${acc}
-        `, C.tag`
-        ${this.__namedSelfQuery(entry)}
-        ${queryBuilder.whereQuery(entry, $params)}
-        RETURN ${C.spread([entry, ...returningRelationVars].reduce((acc, r) => [...acc, C.raw(','), r], []).slice(1))}
-        ${queryBuilder.whereOpts(entry, opts)}
-        `));
+        const results = await this.connection.query(C.tag`
+        ${C.spread(relationVars)}
+        ${this.__namedSelfQuery(target)}
+        ${queryBuilder.whereQuery(target, $params)}
+        RETURN ${C.spread(R.flatten([target, ...returningRelationVars].map((r) => [C.raw(','), r])).slice(1))}
+        ${queryBuilder.whereOpts(target, opts)}
+        `);
+
         return R.transpose(results)[0] || [];
     }
 

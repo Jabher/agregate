@@ -116,9 +116,7 @@ export class Relation extends BaseRelation {
 
     //$FlowFixMe
     delete $params.$relations;
-
-    const entry = new Var();
-
+    const target = new Var();
     const returningRelationVars = []
     //$FlowFixMe
     const relationVars = $relations.map(relation => {
@@ -130,20 +128,15 @@ export class Relation extends BaseRelation {
         returningRelationVars.push(relationPointer)
       }
       //$FlowFixMe
-      return relation.__namedSelfQuery(new Var(), relationPointer, entry, pointer)
+      return relation.__namedSelfQuery(new Var(), relationPointer, target, pointer)
     })
 
-    const target = new Var();
-
-    const result = await this.connection.query(relationVars.reduce(
-      (acc, relation) => C.tag`
-        ${relation}
-        ${acc}
-        `, C.tag`
-            ${this.__namedSelfQuery(new Var(), new Var(), target)}
-            ${queryBuilder.whereQuery(target, query)}
-            RETURN ${C.spread([target, ...returningRelationVars].reduce((acc, r) => [...acc, C.raw(','), r], []).slice(1))}
-            ${queryBuilder.whereOpts(target, opts)}`));
+    const result = await this.connection.query(C.tag`
+        ${C.spread(relationVars)}
+        ${this.__namedSelfQuery(new Var(), new Var(), target)}
+        ${queryBuilder.whereQuery(target, query)}
+        RETURN ${C.spread(R.flatten([target, ...returningRelationVars].map((r) => [C.raw(','), r])).slice(1))}
+        ${queryBuilder.whereOpts(target, opts)}`);
 
     return R.transpose(result)[0] || [];
   }
