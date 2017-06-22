@@ -110,16 +110,40 @@ export class Relation extends BaseRelation {
   entries() { return this.where() }
 
   @acceptsTransaction
-  async where(params: {} | {}[] = {}, opts: { order?: string | string[], offset?: number, limit?: number } = {}) {
-    const source = new Var();
-    const target = new Var();
-    const relation = new Var();
+  async where(query: {} | {}[] = {}, opts: { order?: string | string[], offset?: number, limit?: number } = {}, related: Var[] = []) {
+    const $params = Array.isArray(query) ? query.filter(q => !(q instanceof BaseRelation)) : query.$params || query;
+    const $relations = Array.isArray(query) ? query.filter(q => q instanceof BaseRelation) : query.$relations || [];
 
-    const result = await this.connection.query(C.tag`
-            ${this.__namedSelfQuery(source, relation, target)}
-            ${queryBuilder.whereQuery(target, params)}
-            RETURN ${target}
-            ${queryBuilder.whereOpts(target, opts)}`);
+    //$FlowFixMe
+    delete $params.$relations;
+
+    const entry = new Var();
+
+    const returningRelationVars = []
+    //$FlowFixMe
+    const relationVars = $relations.map(relation => {
+      const pointer = new Var()
+      const relationPointer = new Var()
+      //$FlowFixMe
+      if (related.includes(relation)) {
+        returningRelationVars.push(pointer)
+        returningRelationVars.push(relationPointer)
+      }
+      //$FlowFixMe
+      return relation.__namedSelfQuery(new Var(), relationPointer, entry, pointer)
+    })
+
+    const target = new Var();
+
+    const result = await this.connection.query(relationVars.reduce(
+      (acc, relation) => C.tag`
+        ${relation}
+        ${acc}
+        `, C.tag`
+            ${this.__namedSelfQuery(new Var(), new Var(), target)}
+            ${queryBuilder.whereQuery(target, query)}
+            RETURN ${C.spread([target, ...returningRelationVars].reduce((acc, r) => [...acc, C.raw(','), r], []).slice(1))}
+            ${queryBuilder.whereOpts(target, opts)}`));
 
     return R.transpose(result)[0] || [];
   }

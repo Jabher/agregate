@@ -18,7 +18,7 @@ export class Record extends BaseRecord {
     }
 
     @acceptsTransaction
-    static async where(query: Object = {}, opts, related: Var[] = []) {
+        static async where(query: Object = {}, opts, related: Var[] = []) {
         const $params = Array.isArray(query) ? query.filter(q => !(q instanceof BaseRelation)) : query.$params || query;
         const $relations = Array.isArray(query) ? query.filter(q => q instanceof BaseRelation) : query.$relations || [];
 
