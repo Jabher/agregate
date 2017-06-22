@@ -1,6 +1,6 @@
 {
   "name": "agregate",
-  "version": "0.27.0",
+  "version": "0.28.0",
   "description": "A missing piece of simple API for DB",
   "main": "build/index.js",
   "repository": "jabher/agregate",
