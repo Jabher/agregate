@@ -4,6 +4,7 @@ import { Connection } from "../connection";
 import { Cypher } from "../cypher";
 import chai, { expect } from "chai";
 import spies from "chai-spies";
+
 chai.use(spies);
 
 class Test extends Record {
@@ -22,10 +23,12 @@ describe('Agregate Relation', () => {
     class TestObject extends Test {
       subjects = new Relation(this, 'relation');
     }
+
     class TestSubject extends Test {
       subjects = new Relation(this, 'relation');
       objects = new Relation(this, 'relation', { direction: -1 });
     }
+
     let object
     let subject
     before(async () => {
@@ -51,15 +54,19 @@ describe('Agregate Relation', () => {
     })
     describe('querying', () => {
       it('should support empty $relation queries', async () => {
-        expect(await TestSubject.where({$relations: [
-          object.subjects
-        ]})).to.have.length(0)
+        expect(await TestSubject.where({
+          $relations: [
+            object.subjects
+          ]
+        })).to.have.length(0)
       })
       it('should support $relation queries', async () => {
         await object.subjects.add(await TestSubject.where({ uuid: subject.uuid }))
-        expect(await TestSubject.where({$relations: [
-          object.subjects
-        ]})).to.have.length(1)
+        expect(await TestSubject.where({
+          $relations: [
+            object.subjects
+          ]
+        })).to.have.length(1)
       })
       it('should support shorthand syntax', async () => {
         await object.subjects.add(await TestSubject.where({ uuid: subject.uuid }))
@@ -124,9 +131,11 @@ describe('Agregate Relation', () => {
         intermediateObjects = new Relation(this, 'rel1', { target: TestIntermediateObject });
         endObjects = new Relation(this.intermediateObjects, 'rel2', { target: TestEndObject });
       }
+
       class TestIntermediateObject extends Test {
         endObjects = new Relation(this, 'rel2', { target: TestEndObject });
       }
+
       class TestEndObject extends Test {
       }
 
@@ -195,6 +204,7 @@ describe('Agregate Relation', () => {
     class TestSelfObject extends Test {
       subjects = new Relation(this, 'ref');
     }
+
     let object1
     let object2
     before(async () => {

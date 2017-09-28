@@ -3,15 +3,15 @@ import { Connection } from "../connection";
 import { Cypher } from "../cypher";
 import chai, { expect } from "chai";
 import spies from "chai-spies";
+
 chai.use(spies);
 
 class Test extends Record {
+  static connection = new Connection('localhost', { username: 'neo4j', password: 'password' });
+
   static async save(...props) {
     return await Promise.all(props.map(opts => new this(opts).save()))
   }
-
-
-  static connection = new Connection('localhost', { username: 'neo4j', password: 'password' });
 }
 
 const cleanBeforeEach = () =>
@@ -73,7 +73,7 @@ describe('Agregate Record', () => {
     let items
     cleanBeforeEach();
     beforeEach(async () =>
-      items = await Promise.all(function*() {
+      items = await Promise.all(function* () {
         let idx = 0
         do {yield new Test({ idx, test }).save()}
         while (idx++ < 5)

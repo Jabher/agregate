@@ -10,17 +10,19 @@ import { Cypher } from "./cypher";
 
 import { Connection, Record as RefRecord, Relation } from "./";
 import spies from "chai-spies";
+
 chai.use(spies);
 const connection = new Connection('localhost', { username: 'neo4j', password: 'password' });
 
 class Record extends RefRecord {
-  static async save(...props) { return await Promise.all(props.map(opts => new this(opts).save())) }
-
   static connection = connection;
+
+  static async save(...props) { return await Promise.all(props.map(opts => new this(opts).save())) }
 }
 
 describe('Agregate', () => {
   class Test extends Record {}
+
   beforeEach(async () => {
     connection.__resetResolver();
     await connection.query(Cypher.tag`MATCH (n) DETACH DELETE n`);
@@ -55,6 +57,7 @@ describe('Agregate', () => {
       class Test2 extends Test {
         foo = new Relation(this, 'foo');
       }
+
       await Test2.register();
       await new Test2({ baz: true }).save();
       const [res] = await Test2.where({ baz: true });

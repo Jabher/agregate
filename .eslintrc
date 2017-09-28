@@ -1,15 +1,29 @@
 {
-  "extends": "eslint:recommended",
+  "extends": [
+    "eslint:recommended",
+    "plugin:flowtype/recommended"
+  ],
   "parser": "babel-eslint",
+  "plugins": [
+    "flowtype"
+  ],
   "env": {
     "es6": true,
-    "shared-node-browser": true,
+    "node": true,
     "mocha": true
   },
   "globals": {
     "Class": true
   },
   "rules": {
-    "no-console": ["error", { "allow": ["warn", "error"] }]
+    "no-console": [
+      "error",
+      {
+        "allow": [
+          "warn",
+          "error"
+        ]
+      }
+    ]
   }
 }

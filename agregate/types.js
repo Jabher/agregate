@@ -1,10 +1,13 @@
+// @flow
+
 export type DBPrimitive = string | number | boolean;
-export type DBType = DBPrimitive | DBPrimitive[];
 export type DBProperties = { [key: string]: DBPrimitive };
 
 export type Query = {
-  statement: string;
-  parameters?: DBProperties;
-}
+  statement: string,
+  parameters?: DBProperties
+};
 
-export type CypherQuery = { toJSON: () => Query }
+export type CypherQuery = { toJSON: () => Query };
+
+export type QueryBuilder = CypherQuery

@@ -1,1 +1,3 @@
-import "core-js/library/fn/reflect";
+// @flow
+
+import 'core-js/library/fn/reflect'
