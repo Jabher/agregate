@@ -1,4 +1,7 @@
 # Agregate
+
+[![Greenkeeper badge](https://badges.greenkeeper.io/Jabher/agregate.svg)](https://greenkeeper.io/)
+
 ##### A "missing piece" of DB clients for Node.JS, accenting on familiar JS experience, developer's freedom and simplicity of usage
 
 > Programmers waste enormous amounts of time thinking about, or worrying about, the speed of noncritical parts of their programs, and these attempts at efficiency actually have a strong negative impact when debugging and maintenance are considered. **Donald Knuth**
